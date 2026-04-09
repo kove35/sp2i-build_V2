@@ -21,10 +21,7 @@ services:
           name: sp2i-build-db
           property: password
       - key: SP2I_CORS_ALLOWED_ORIGINS
-        fromService:
-          type: web
-          name: sp2i-build-frontend
-          property: host
+        value: https://*.vercel.app,https://sp2i-build-frontend.onrender.com,http://localhost:5173,http://127.0.0.1:5173
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_MODEL

@@ -34,7 +34,7 @@ logging:
 
 app:
   cors:
-    allowed-origins: ${SP2I_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+    allowed-origins: ${SP2I_CORS_ALLOWED_ORIGINS:https://*.vercel.app,http://localhost:5173,http://127.0.0.1:5173}
 
 security:
   jwt:
