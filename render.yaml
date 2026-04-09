@@ -57,4 +57,4 @@ services:
 
 databases:
   - name: sp2i-build-db
-    plan: starter
+    plan: free
