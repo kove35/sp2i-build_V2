@@ -102,6 +102,8 @@ export default function DqeIntelligent({ dashboard }) {
         eyebrow="DQE Intelligent"
         title="Pipeline intelligent DQE -> CAPEX"
         description="Charge un document brut, laisse SP2I l'extraire, le structurer, le scorer, l'enrichir, puis importe uniquement les lignes valides dans ton projet."
+        backendHint={data.backendStatusMessage}
+        backendHintTone={data.backendWakeInProgress ? "warning" : "info"}
       />
 
       <section className="top-grid">
@@ -231,7 +233,7 @@ export default function DqeIntelligent({ dashboard }) {
         <LoadingPanel message="Extraction, analyse IA, validation metier, scoring et enrichissement en cours..." />
       )}
 
-      <ErrorPanel error={data.error} />
+      <ErrorPanel error={data.error} backendHint={data.backendStatusMessage} />
 
       {result && (
         <>

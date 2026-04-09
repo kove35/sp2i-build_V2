@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  API_BASE_URL,
+  API_URL,
   buildBatimentNiveauHeatmap,
   buildCoverageMetrics,
   buildChartData,
@@ -20,6 +20,9 @@ const AUTH_TOKEN_STORAGE_KEY = "sp2i-auth-token";
 const AUTH_EMAIL_STORAGE_KEY = "sp2i-auth-email";
 const AUTH_USER_ID_STORAGE_KEY = "sp2i-auth-user-id";
 const DEMO_DQE_FILE_URL = "/demo/DQE_MEDICAL_CENTER_13-08-2025.pdf";
+const RENDER_RETRYABLE_STATUSES = new Set([502, 503, 504]);
+const RENDER_COLD_START_RETRIES = 2;
+const RENDER_COLD_START_DELAY_MS = 2500;
 const LOT_LABELS_BY_CODE = {
   "1": "Gros oeuvre",
   "2": "Etancheite",
@@ -100,6 +103,8 @@ export function useCapexDashboardData() {
   const [planningLoading, setPlanningLoading] = useState(false);
   const [error, setError] = useState("");
   const [planningError, setPlanningError] = useState("");
+  const [backendWakeInProgress, setBackendWakeInProgress] = useState(false);
+  const [backendStatusMessage, setBackendStatusMessage] = useState("");
 
   const [activeProjectId, setActiveProjectId] = useState(() => {
     return window.localStorage.getItem(ACTIVE_PROJECT_STORAGE_KEY) ?? "";
@@ -205,7 +210,7 @@ export function useCapexDashboardData() {
 
   async function loadProjects() {
     try {
-      const response = await fetch(`${API_BASE_URL}/projects`, {
+      const response = await apiFetch(`/projects`, {
         headers: buildAuthHeaders(),
       });
 
@@ -240,10 +245,10 @@ export function useCapexDashboardData() {
       const projectQuery = buildQueryString({ projectId: activeProjectId });
 
       const [itemsResponse, recentItemsResponse] = await Promise.all([
-        fetch(`${API_BASE_URL}/capex/items${projectQuery}`, {
+        apiFetch(`/capex/items${projectQuery}`, {
           headers: buildAuthHeaders(),
         }),
-        fetch(`${API_BASE_URL}/capex/items/recent${projectQuery}`, {
+        apiFetch(`/capex/items/recent${projectQuery}`, {
           headers: buildAuthHeaders(),
         }),
       ]);
@@ -284,10 +289,10 @@ export function useCapexDashboardData() {
       });
 
       const [summaryResponse, itemsResponse] = await Promise.all([
-        fetch(`${API_BASE_URL}/capex/summary${queryString}`, {
+        apiFetch(`/capex/summary${queryString}`, {
           headers: buildAuthHeaders(),
         }),
-        fetch(`${API_BASE_URL}/capex/items${queryString}`, {
+        apiFetch(`/capex/items${queryString}`, {
           headers: buildAuthHeaders(),
         }),
       ]);
@@ -331,7 +336,7 @@ export function useCapexDashboardData() {
       setPlanningLoading(true);
       setPlanningError("");
 
-      const response = await fetch(`${API_BASE_URL}/planning/${activeProjectId}`, {
+      const response = await apiFetch(`/planning/${activeProjectId}`, {
         headers: buildAuthHeaders(),
       });
 
@@ -356,7 +361,7 @@ export function useCapexDashboardData() {
 
     try {
       const queryString = buildQueryString({ lot });
-      const response = await fetch(`${API_BASE_URL}/dqe/families/suggestions${queryString}`, {
+      const response = await apiFetch(`/dqe/families/suggestions${queryString}`, {
         headers: buildAuthHeaders(),
       });
 
@@ -399,7 +404,7 @@ export function useCapexDashboardData() {
       formData.append("projectId", targetProjectId);
       formData.append("file", selectedFile);
 
-      const response = await fetch(`${API_BASE_URL}/capex/import`, {
+      const response = await apiFetch(`/capex/import`, {
         method: "POST",
         headers: buildAuthHeaders(false),
         body: formData,
@@ -426,7 +431,7 @@ export function useCapexDashboardData() {
     try {
       setImportError("");
 
-      const response = await fetch(`${API_BASE_URL}/capex/import/template`, {
+      const response = await apiFetch(`/capex/import/template`, {
         headers: buildAuthHeaders(),
       });
 
@@ -502,7 +507,7 @@ export function useCapexDashboardData() {
       setDqeBuilderMessage("");
 
       for (const line of dqeDraftLines) {
-        const response = await fetch(`${API_BASE_URL}/dqe/items`, {
+        const response = await apiFetch(`/dqe/items`, {
           method: "POST",
           headers: buildAuthHeaders(),
           body: JSON.stringify({
@@ -545,7 +550,7 @@ export function useCapexDashboardData() {
     try {
       setDqeBuilderError("");
       const queryString = buildQueryString({ projectId: targetProjectId });
-      const response = await fetch(`${API_BASE_URL}/dqe/export${queryString}`, {
+      const response = await apiFetch(`/dqe/export${queryString}`, {
         headers: buildAuthHeaders(),
       });
 
@@ -582,7 +587,7 @@ export function useCapexDashboardData() {
       formData.append("projectId", targetProjectId);
       formData.append("file", dqeDocumentFile);
 
-      const response = await fetch(`${API_BASE_URL}/dqe/import`, {
+      const response = await apiFetch(`/dqe/import`, {
         method: "POST",
         headers: buildAuthHeaders(false),
         body: formData,
@@ -631,7 +636,7 @@ export function useCapexDashboardData() {
       const formData = new FormData();
       formData.append("file", dqeAnalysisFile);
 
-      const response = await fetch(`${API_BASE_URL}/dqe/analyze`, {
+      const response = await apiFetch(`/dqe/analyze`, {
         method: "POST",
         headers: buildAuthHeaders(false),
         body: formData,
@@ -679,7 +684,7 @@ export function useCapexDashboardData() {
       const formData = new FormData();
       formData.append("file", demoFile);
 
-      const response = await fetch(`${API_BASE_URL}/dqe/analyze`, {
+      const response = await apiFetch(`/dqe/analyze`, {
         method: "POST",
         headers: buildAuthHeaders(false),
         body: formData,
@@ -729,7 +734,7 @@ export function useCapexDashboardData() {
       formData.append("projectId", targetProjectId);
       formData.append("file", dqeAnalysisFile);
 
-      const response = await fetch(`${API_BASE_URL}/dqe/import`, {
+      const response = await apiFetch(`/dqe/import`, {
         method: "POST",
         headers: buildAuthHeaders(false),
         body: formData,
@@ -782,7 +787,7 @@ export function useCapexDashboardData() {
       const formData = new FormData();
       formData.append("file", dqeAiFile);
 
-      const response = await fetch(`${API_BASE_URL}/dqe/analyze-ai`, {
+      const response = await apiFetch(`/dqe/analyze-ai`, {
         method: "POST",
         headers: buildAuthHeaders(false),
         body: formData,
@@ -841,7 +846,7 @@ export function useCapexDashboardData() {
       }
 
       for (const line of importableLines) {
-        const response = await fetch(`${API_BASE_URL}/dqe/items`, {
+        const response = await apiFetch(`/dqe/items`, {
           method: "POST",
           headers: buildAuthHeaders(),
           body: JSON.stringify({
@@ -973,7 +978,7 @@ export function useCapexDashboardData() {
         throw new Error("Aucune ligne structurée exploitable n'a été trouvée dans le tableau collé.");
       }
 
-      const response = await fetch(`${API_BASE_URL}/dqe/import`, {
+      const response = await apiFetch(`/dqe/import`, {
         method: "POST",
         headers: buildAuthHeaders(),
         body: JSON.stringify({
@@ -1025,7 +1030,7 @@ export function useCapexDashboardData() {
         throw new Error("Aucune ligne corrigée et importable n'est disponible pour l'import.");
       }
 
-      const response = await fetch(`${API_BASE_URL}/dqe/import`, {
+      const response = await apiFetch(`/dqe/import`, {
         method: "POST",
         headers: buildAuthHeaders(),
         body: JSON.stringify({
@@ -1090,7 +1095,7 @@ export function useCapexDashboardData() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch(`${API_BASE_URL}/dqe/analyze-full`, {
+      const response = await apiFetch(`/dqe/analyze-full`, {
         method: "POST",
         headers: buildAuthHeaders(false),
         body: formData,
@@ -1167,6 +1172,8 @@ export function useCapexDashboardData() {
       planningLoading,
       error,
       planningError,
+      backendWakeInProgress,
+      backendStatusMessage,
       chartData: buildChartData(summary, lotFilter),
       familyEntries: buildFamilyEntries(summary, familleFilter),
       batimentEntries: buildGroupedEntries(items, "batiment", batimentFilter),
@@ -1279,12 +1286,46 @@ export function useCapexDashboardData() {
     await authenticate("/auth/register", credentials);
   }
 
+  async function apiFetch(path, options = {}, attempt = 0) {
+    const requestUrl = path.startsWith("http://") || path.startsWith("https://")
+      ? path
+      : `${API_URL}${path}`;
+
+    try {
+      const response = await fetch(requestUrl, options);
+
+      if (RENDER_RETRYABLE_STATUSES.has(response.status) && attempt < RENDER_COLD_START_RETRIES) {
+        setBackendWakeInProgress(true);
+        setBackendStatusMessage("Backend en cours de demarrage sur Render, nouvelle tentative...");
+        await wait(RENDER_COLD_START_DELAY_MS);
+        return apiFetch(path, options, attempt + 1);
+      }
+
+      if (response.ok && (backendWakeInProgress || backendStatusMessage)) {
+        setBackendWakeInProgress(false);
+        setBackendStatusMessage("");
+      }
+
+      return response;
+    } catch (requestError) {
+      if (attempt < RENDER_COLD_START_RETRIES) {
+        setBackendWakeInProgress(true);
+        setBackendStatusMessage("Backend en cours de reveil, nouvelle tentative...");
+        await wait(RENDER_COLD_START_DELAY_MS);
+        return apiFetch(path, options, attempt + 1);
+      }
+
+      setBackendWakeInProgress(false);
+      throw requestError;
+    }
+  }
+
   async function authenticate(path, credentials) {
     try {
       setAuthLoading(true);
       setAuthError("");
 
-      const response = await fetch(`${API_BASE_URL}${path}`, {
+      const response = await apiFetch(path, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1327,7 +1368,7 @@ export function useCapexDashboardData() {
       setProjectCreationLoading(true);
       setProjectCreationError("");
 
-      const response = await fetch(`${API_BASE_URL}/projects`, {
+      const response = await apiFetch(`/projects`, {
         method: "POST",
         headers: buildAuthHeaders(),
         body: JSON.stringify(projectPayload),
@@ -1447,6 +1488,12 @@ function normalizeNumericValue(value) {
     return 0;
   }
   return Number(String(value).replace(",", ".")) || 0;
+}
+
+function wait(durationMs) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, durationMs);
+  });
 }
 
 function isEditableNumericField(fieldName) {
@@ -1598,3 +1645,4 @@ function resolveStructuredLotLabel(lotCode) {
   const normalizedCode = String(lotCode || "").trim();
   return LOT_LABELS_BY_CODE[normalizedCode] || normalizedCode || "DQE";
 }
+

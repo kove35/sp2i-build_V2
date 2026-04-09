@@ -21,13 +21,14 @@ import {
   normalizeZoneLabel,
 } from "../lib/capex";
 
-export function PageHeader({ eyebrow, title, description }) {
+export function PageHeader({ eyebrow, title, description, backendHint = "", backendHintTone = "info" }) {
   return (
     <section className="page-hero">
       <div>
         <p className="eyebrow">{eyebrow}</p>
         <h2>{title}</h2>
         <p className="hero-copy">{description}</p>
+        {backendHint && <p className={`hero-hint hero-hint-${backendHintTone}`}>{backendHint}</p>}
       </div>
       <div className="hero-status">
         <span className="status-dot" />
@@ -967,7 +968,7 @@ export function DqeDocumentImportPanel({ dqeState, projectContext }) {
   );
 }
 
-export function ErrorPanel({ error }) {
+export function ErrorPanel({ error, backendHint = "" }) {
   if (!error) {
     return null;
   }
@@ -976,6 +977,7 @@ export function ErrorPanel({ error }) {
     <section className="panel error-panel">
       <h3>Erreur de chargement</h3>
       <p>{error}</p>
+      {backendHint && <p>{backendHint}</p>}
       <p>Verifie que le backend Spring Boot tourne bien sur {BACKEND_LABEL}.</p>
     </section>
   );

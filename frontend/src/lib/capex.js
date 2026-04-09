@@ -10,10 +10,11 @@ function normalizeApiBaseUrl(rawValue) {
   return `https://${rawValue.replace(/\/$/, "")}`;
 }
 
-export const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
+export const API_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_URL);
+export const API_BASE_URL = API_URL;
 export const BACKEND_LABEL =
   import.meta.env.VITE_BACKEND_LABEL ||
-  (API_BASE_URL === "/api" ? "http://localhost:8080" : API_BASE_URL);
+  (API_URL === "/api" ? "proxy /api" : API_URL);
 
 const LOT_LABELS = {
   "1": "Gros oeuvre",

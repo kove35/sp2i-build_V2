@@ -22,6 +22,8 @@ export default function Direction({ dashboard }) {
         eyebrow="Direction"
         title="Synthese executive CAPEX"
         description="Une vue de direction pour comprendre les KPI, les leviers d'economie et les grandes masses par lot et par famille."
+        backendHint={data.backendStatusMessage}
+        backendHintTone={data.backendWakeInProgress ? "warning" : "info"}
       />
 
       <FilterPanel filters={filters} data={data} projectContext={projectContext} />
@@ -29,7 +31,7 @@ export default function Direction({ dashboard }) {
       {(data.loading || data.catalogLoading) && (
         <LoadingPanel message="Chargement du dashboard direction..." />
       )}
-      {!data.loading && <ErrorPanel error={data.error} />}
+      {!data.loading && <ErrorPanel error={data.error} backendHint={data.backendStatusMessage} />}
 
       {!data.loading && !data.error && (
         <>

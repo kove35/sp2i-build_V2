@@ -25,6 +25,8 @@ export default function Import({ dashboard }) {
         eyebrow="Import"
         title="Sourcing et matrices DQE"
         description="Un espace operationnel pour charger les fichiers Excel, choisir le projet cible et analyser rapidement les familles les plus consommatrices."
+        backendHint={data.backendStatusMessage}
+        backendHintTone={data.backendWakeInProgress ? "warning" : "info"}
       />
 
       <section className="top-grid">
@@ -40,7 +42,7 @@ export default function Import({ dashboard }) {
       <DqeDraftTable dqeState={dqeState} currencyCode={currencyCode} />
 
       {(data.loading || data.catalogLoading) && <LoadingPanel message="Chargement de l'espace import..." />}
-      <ErrorPanel error={data.error} />
+      <ErrorPanel error={data.error} backendHint={data.backendStatusMessage} />
 
       <section className="content-grid">
         <ChartPanel chartData={data.chartData} onBarClick={filters.setLotFilter} currencyCode={currencyCode} />

@@ -416,6 +416,20 @@ input {
   margin-top: 14px;
 }
 
+.hero-hint {
+  margin-top: 12px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.hero-hint-info {
+  color: #7dd3fc;
+}
+
+.hero-hint-warning {
+  color: #fbbf24;
+}
+
 .hero-status {
   display: inline-flex;
   align-items: center;

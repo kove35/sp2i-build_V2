@@ -28,6 +28,8 @@ export default function Chantier({ dashboard }) {
         eyebrow="Chantier"
         title="Couts terrain et arbitrages"
         description="Une vision terrain pour comparer les couts locaux et import, suivre les volumes engages et voir rapidement quelles decisions dominent."
+        backendHint={data.backendStatusMessage}
+        backendHintTone={data.backendWakeInProgress ? "warning" : "info"}
       />
 
       <FilterPanel filters={filters} data={data} projectContext={projectContext} />
@@ -35,7 +37,7 @@ export default function Chantier({ dashboard }) {
       {(data.loading || data.catalogLoading) && (
         <LoadingPanel message="Chargement du dashboard chantier..." />
       )}
-      {!data.loading && <ErrorPanel error={data.error} />}
+      {!data.loading && <ErrorPanel error={data.error} backendHint={data.backendStatusMessage} />}
 
       {!data.loading && !data.error && (
         <>
