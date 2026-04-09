@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import javax.sql.DataSource;
+import java.net.URI;
 
 /**
  * Configuration explicite de la DataSource.
@@ -55,18 +56,45 @@ public class DatasourceConfig {
             return rawUrl;
         }
 
-        if (rawUrl.startsWith("jdbc:")) {
-            return rawUrl;
+        if (rawUrl.startsWith("jdbc:postgresql://")) {
+            return stripCredentialsFromJdbcUrl(rawUrl);
         }
 
         if (rawUrl.startsWith("postgresql://")) {
-            return "jdbc:" + rawUrl;
+            return convertRenderPostgresUrl(rawUrl);
         }
 
         if (rawUrl.startsWith("postgres://")) {
-            return "jdbc:postgresql://" + rawUrl.substring("postgres://".length());
+            return convertRenderPostgresUrl(rawUrl.replaceFirst("^postgres://", "postgresql://"));
         }
 
         return rawUrl;
+    }
+
+    private String convertRenderPostgresUrl(String rawUrl) {
+        try {
+            URI uri = URI.create(rawUrl);
+            String host = uri.getHost();
+            int port = uri.getPort();
+            String path = uri.getPath();
+
+            StringBuilder jdbcUrl = new StringBuilder("jdbc:postgresql://").append(host);
+            if (port > 0) {
+                jdbcUrl.append(":").append(port);
+            }
+            jdbcUrl.append(path);
+            return jdbcUrl.toString();
+        } catch (IllegalArgumentException exception) {
+            return "jdbc:" + rawUrl;
+        }
+    }
+
+    private String stripCredentialsFromJdbcUrl(String rawUrl) {
+        try {
+            String normalizedUrl = rawUrl.replaceFirst("^jdbc:", "");
+            return convertRenderPostgresUrl(normalizedUrl);
+        } catch (IllegalArgumentException exception) {
+            return rawUrl;
+        }
     }
 }
