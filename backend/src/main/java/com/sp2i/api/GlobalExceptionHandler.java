@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -90,6 +91,20 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(
                 "Le fichier depasse la taille maximale autorisee.",
                 HttpStatus.PAYLOAD_TOO_LARGE,
+                request.getRequestURI()
+        );
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleNoResourceFoundException(
+            NoResourceFoundException exception,
+            HttpServletRequest request
+    ) {
+        LOGGER.warn("Ressource introuvable : {}", request.getRequestURI());
+        return buildErrorResponse(
+                "Ressource introuvable.",
+                HttpStatus.NOT_FOUND,
                 request.getRequestURI()
         );
     }
