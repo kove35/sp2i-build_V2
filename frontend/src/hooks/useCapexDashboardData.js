@@ -380,6 +380,27 @@ export function useCapexDashboardData() {
     await Promise.all([loadCatalogForProject(), loadDashboard(), loadPlanning()]);
   }
 
+  async function ensureTargetProjectIdForDqeImport(projectName = "Projet DQE SP2I") {
+    if (activeProjectId) {
+      return activeProjectId;
+    }
+
+    if (projects.length > 0) {
+      const fallbackProjectId = String(projects[0].id);
+      setActiveProjectId(fallbackProjectId);
+      setSelectedProjectId(fallbackProjectId);
+      return fallbackProjectId;
+    }
+
+    const createdProject = await createProject({ name: projectName });
+
+    if (!createdProject?.id) {
+      throw new Error("Impossible de creer automatiquement un projet cible pour l'import.");
+    }
+
+    return String(createdProject.id);
+  }
+
   async function handleImport() {
     const targetProjectId = selectedProjectId || activeProjectId;
 
@@ -713,19 +734,13 @@ export function useCapexDashboardData() {
    * - transformer la demo en vrai cas d'usage operationnel
    */
   async function handleImportAnalyzedFile() {
-    const targetProjectId = activeProjectId;
-
-    if (!targetProjectId) {
-      setDqeAnalysisError("Choisis d'abord un projet actif avant l'import.");
-      return;
-    }
-
     if (!dqeAnalysisFile) {
       setDqeAnalysisError("Aucun document analyse n'est disponible a importer.");
       return;
     }
 
     try {
+      const targetProjectId = await ensureTargetProjectIdForDqeImport("Projet DQE analyse");
       setDqeAnalysisImportLoading(true);
       setDqeAnalysisError("");
       setDqeAnalysisImportMessage("");
@@ -815,19 +830,13 @@ export function useCapexDashboardData() {
    * pour creer de vraies lignes DQE dans le projet actif.
    */
   async function handleImportAiCleanData() {
-    const targetProjectId = activeProjectId;
-
-    if (!targetProjectId) {
-      setDqeAiError("Choisis d'abord un projet actif avant l'import.");
-      return;
-    }
-
     if (!dqeAiResult?.lignes?.length) {
       setDqeAiError("Aucune ligne AI n'est disponible a importer.");
       return;
     }
 
     try {
+      const targetProjectId = await ensureTargetProjectIdForDqeImport("Projet DQE AI");
       setDqeAiImportLoading(true);
       setDqeAiError("");
       setDqeAiImportMessage("");
@@ -955,19 +964,13 @@ export function useCapexDashboardData() {
   }
 
   async function handleStructuredDqeTextDirectImport() {
-    const targetProjectId = activeProjectId;
-
-    if (!targetProjectId) {
-      setDqeFullError("Choisis d'abord un projet actif avant l'import.");
-      return;
-    }
-
     if (!dqeStructuredText.trim()) {
       setDqeFullError("Colle d'abord un tableau structure avant l'import direct.");
       return;
     }
 
     try {
+      const targetProjectId = await ensureTargetProjectIdForDqeImport("Projet DQE colle");
       setDqeFullImportLoading(true);
       setDqeFullError("");
       setDqeFullImportMessage("");
@@ -1007,19 +1010,13 @@ export function useCapexDashboardData() {
   }
 
   async function handleImportValidDqeLines() {
-    const targetProjectId = activeProjectId;
-
-    if (!targetProjectId) {
-      setDqeFullError("Choisis d'abord un projet actif avant l'import.");
-      return;
-    }
-
     if (!dqeFullEditableLines?.length) {
       setDqeFullError("Aucune ligne analysee n'est disponible.");
       return;
     }
 
     try {
+      const targetProjectId = await ensureTargetProjectIdForDqeImport("Projet DQE valide");
       setDqeFullImportLoading(true);
       setDqeFullError("");
       setDqeFullImportMessage("");
