@@ -1,0 +1,5 @@
+ALTER TABLE capex_item
+    ADD COLUMN IF NOT EXISTS designation VARCHAR(255);
+
+ALTER TABLE capex_item
+    ADD COLUMN IF NOT EXISTS unite VARCHAR(50);

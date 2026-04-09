@@ -1,0 +1,2 @@
+ALTER TABLE capex_item
+    ALTER COLUMN id TYPE BIGINT;
