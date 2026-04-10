@@ -13,7 +13,10 @@ import static org.mockito.Mockito.when;
 class DqeAnalysisServiceTest {
 
     private final DqeImportService dqeImportService = mock(DqeImportService.class);
-    private final DqeAnalysisService dqeAnalysisService = new DqeAnalysisService(dqeImportService);
+    private final DqeAnalysisService dqeAnalysisService = new DqeAnalysisService(
+            dqeImportService,
+            new DqeSemanticHelper()
+    );
 
     @Test
     void shouldAnalyzeDocumentAndComputeCountersAndScore() {

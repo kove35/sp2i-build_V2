@@ -13,7 +13,10 @@ import static org.mockito.Mockito.when;
 class DqeAiAnalysisServiceTest {
 
     private final DqeImportService dqeImportService = mock(DqeImportService.class);
-    private final DqeAiAnalysisService dqeAiAnalysisService = new DqeAiAnalysisService(dqeImportService);
+    private final DqeAiAnalysisService dqeAiAnalysisService = new DqeAiAnalysisService(
+            dqeImportService,
+            new DqeSemanticHelper()
+    );
 
     @Test
     void shouldAnalyzeDocumentWithAiEnrichment() {
@@ -36,7 +39,7 @@ class DqeAiAnalysisServiceTest {
         assertThat(result.scoreGlobal()).isBetween(15d, 100d);
         assertThat(result.lignesAnalysees()).isEqualTo(3);
         assertThat(result.lignes()).hasSize(3);
-        assertThat(result.lignes().get(0).lot()).isEqualTo("Menuiserie");
+        assertThat(result.lignes().get(0).lot()).isEqualTo(DqeSemanticHelper.LOT_MENUISERIE_ALU);
         assertThat(result.lignes().get(0).prixImportEstime()).isNotNull();
         assertThat(result.lignes().get(0).decision()).isIn("IMPORT", "LOCAL", "MIX");
         assertThat(result.lignes().get(1).niveauRisque()).isEqualTo("ELEVE");

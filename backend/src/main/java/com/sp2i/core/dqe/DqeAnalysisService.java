@@ -10,7 +10,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,9 +42,11 @@ public class DqeAnalysisService {
     private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+(?:[.,]\\d+)?");
 
     private final DqeImportService dqeImportService;
+    private final DqeSemanticHelper semanticHelper;
 
-    public DqeAnalysisService(DqeImportService dqeImportService) {
+    public DqeAnalysisService(DqeImportService dqeImportService, DqeSemanticHelper semanticHelper) {
         this.dqeImportService = dqeImportService;
+        this.semanticHelper = semanticHelper;
     }
 
     /**
@@ -110,8 +111,8 @@ public class DqeAnalysisService {
     private DqeAnalysisLineDTO analyzeLine(String line) {
         List<Double> detectedNumbers = extractNumbers(line);
         String designation = extractDesignation(line);
-        String lot = inferLot(designation);
-        String famille = inferFamille(designation, lot);
+        String lot = semanticHelper.inferLot(designation);
+        String famille = semanticHelper.inferFamille(designation, lot);
 
         Double quantite = detectedNumbers.size() >= 1 ? detectedNumbers.get(0) : null;
         Double prixUnitaire = detectedNumbers.size() >= 2 ? detectedNumbers.get(1) : null;
@@ -125,14 +126,14 @@ public class DqeAnalysisService {
         if (prixUnitaire == null) {
             alertes.add("Prix unitaire manquant");
         }
-        if ("DQE".equals(lot) || "Autres".equals(famille)) {
+        if (DqeSemanticHelper.LOT_INCONNU.equals(lot) || "Autres".equals(famille)) {
             alertes.add("Classification incertaine");
         }
         if (prixTotal == null) {
             alertes.add("Total non calcule");
         }
 
-        boolean classee = !"DQE".equals(lot) && !"Autres".equals(famille);
+        boolean classee = !DqeSemanticHelper.LOT_INCONNU.equals(lot) && !"Autres".equals(famille);
         boolean valide = quantite != null && prixUnitaire != null;
         double score = computeScore(quantite, prixUnitaire, prixTotal, classee);
 
@@ -223,40 +224,6 @@ public class DqeAnalysisService {
         } catch (NumberFormatException exception) {
             return null;
         }
-    }
-
-    private String inferLot(String designation) {
-        String normalized = designation.toLowerCase(Locale.ROOT);
-
-        if (normalized.contains("fenetre") || normalized.contains("porte") || normalized.contains("vitrage")) {
-            return "Menuiserie";
-        }
-        if (normalized.contains("cable") || normalized.contains("eclairage") || normalized.contains("tableau")) {
-            return "Electricite";
-        }
-        if (normalized.contains("tuyau") || normalized.contains("robinet") || normalized.contains("sanitaire")) {
-            return "Plomberie";
-        }
-        if (normalized.contains("clim") || normalized.contains("ventilation") || normalized.contains("split")) {
-            return "CVC";
-        }
-        if (normalized.contains("peinture") || normalized.contains("enduit") || normalized.contains("faux plafond")) {
-            return "Finitions";
-        }
-        return "DQE";
-    }
-
-    private String inferFamille(String designation, String lot) {
-        String normalized = designation.toLowerCase(Locale.ROOT);
-
-        return switch (lot) {
-            case "Menuiserie" -> normalized.contains("porte") ? "Portes" : "Fenetres";
-            case "Electricite" -> normalized.contains("tableau") ? "Tableaux" : "Cables";
-            case "Plomberie" -> normalized.contains("sanitaire") ? "Sanitaires" : "Tuyauterie";
-            case "CVC" -> normalized.contains("ventilation") ? "Ventilation" : "Climatisation";
-            case "Finitions" -> normalized.contains("faux plafond") ? "Faux plafond" : "Peinture";
-            default -> "Autres";
-        };
     }
 
     private double round(double value) {

@@ -41,7 +41,25 @@ export default function Chantier({ dashboard }) {
 
       {!data.loading && !data.error && (
         <>
+          <section className="section-copy-card">
+            <p className="panel-label">Chantier</p>
+            <h3>Vision terrain</h3>
+            <p className="helper-text">
+              Cette section synthétise les arbitrages import/local, les volumes engages et les
+              indicateurs utiles au pilotage operationnel.
+            </p>
+          </section>
+
           <MetricsGrid summary={data.summary} mode="chantier" currencyCode={currencyCode} />
+
+          <section className="section-copy-card">
+            <p className="panel-label">Chantier</p>
+            <h3>Arbitrages operationnels</h3>
+            <p className="helper-text">
+              Les cartes ci-dessous indiquent rapidement si le chantier est majoritairement pilote en
+              local, en import ou en zone mixte.
+            </p>
+          </section>
 
           <section className="three-grid">
             <article className="panel insight-card">
@@ -87,9 +105,27 @@ export default function Chantier({ dashboard }) {
             </article>
           </section>
 
+          <section className="section-copy-card">
+            <p className="panel-label">Chantier</p>
+            <h3>Lecture lots et familles</h3>
+            <p className="helper-text">
+              On visualise ici les lots et familles dominants afin d'orienter les priorites de suivi
+              chantier.
+            </p>
+          </section>
+
           <section className="content-grid">
             <ChartPanel chartData={data.chartData} onBarClick={filters.setLotFilter} currencyCode={currencyCode} />
             <FamilyPanel familyEntries={data.familyEntries} onSelect={filters.setFamilleFilter} currencyCode={currencyCode} />
+          </section>
+
+          <section className="section-copy-card">
+            <p className="panel-label">Chantier</p>
+            <h3>Lecture terrain par zone</h3>
+            <p className="helper-text">
+              Le detail par batiment, niveau et heatmap met en lumiere les zones les plus charges du
+              projet.
+            </p>
           </section>
 
           <section className="content-grid">
@@ -116,6 +152,15 @@ export default function Chantier({ dashboard }) {
               filters.setNiveauFilter(niveau);
             }}
           />
+
+          <section className="section-copy-card">
+            <p className="panel-label">Chantier</p>
+            <h3>Postes a suivre</h3>
+            <p className="helper-text">
+              Le tableau final sert de vue de travail detaillee pour suivre les postes CAPEX visibles
+              dans le perimetre filtre.
+            </p>
+          </section>
 
           <ItemsTable items={data.items} title="Postes CAPEX terrain" currencyCode={currencyCode} />
         </>

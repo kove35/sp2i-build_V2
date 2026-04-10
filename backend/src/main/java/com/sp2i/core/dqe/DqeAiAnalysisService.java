@@ -36,9 +36,11 @@ public class DqeAiAnalysisService {
     private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+(?:[.,]\\d+)?");
 
     private final DqeImportService dqeImportService;
+    private final DqeSemanticHelper semanticHelper;
 
-    public DqeAiAnalysisService(DqeImportService dqeImportService) {
+    public DqeAiAnalysisService(DqeImportService dqeImportService, DqeSemanticHelper semanticHelper) {
         this.dqeImportService = dqeImportService;
+        this.semanticHelper = semanticHelper;
     }
 
     /**
@@ -125,9 +127,9 @@ public class DqeAiAnalysisService {
         List<String> alertes = new ArrayList<>();
 
         String designation = extractDesignation(rawLine);
-        String lot = inferLot(designation);
-        String famille = inferFamille(designation, lot);
-        String unite = inferUnit(designation);
+        String lot = semanticHelper.inferLot(designation);
+        String famille = semanticHelper.inferFamille(designation, lot);
+        String unite = semanticHelper.inferUnit(designation);
 
         Double quantite = numbers.size() >= 1 ? numbers.get(0) : 1d;
         if (numbers.isEmpty()) {
@@ -144,7 +146,7 @@ public class DqeAiAnalysisService {
         String niveauRisque = evaluateImportRisk(lot, famille, designation);
         String decision = suggestDecision(prixLocal, prixImport, niveauRisque);
 
-        if ("DQE".equals(lot) || "Autres".equals(famille)) {
+        if (DqeSemanticHelper.LOT_INCONNU.equals(lot) || "Autres".equals(famille)) {
             alertes.add("Classification incertaine");
         }
         if ("ELEVE".equals(niveauRisque)) {
@@ -193,11 +195,13 @@ public class DqeAiAnalysisService {
 
     private Double estimateLocalPrice(String designation, String lot, String famille) {
         double base = switch (lot) {
-            case "Menuiserie" -> famille.equals("Portes") ? 420d : 650d;
-            case "Electricite" -> famille.equals("Tableaux") ? 520d : 140d;
-            case "Plomberie" -> famille.equals("Sanitaires") ? 280d : 95d;
-            case "CVC" -> famille.equals("Climatisation") ? 750d : 410d;
-            case "Finitions" -> famille.equals("Peinture") ? 18d : 40d;
+            case DqeSemanticHelper.LOT_MENUISERIE_ALU -> famille.equals("Portes aluminium") ? 420d : 650d;
+            case DqeSemanticHelper.LOT_MENUISERIE_METALLIQUE -> 460d;
+            case DqeSemanticHelper.LOT_MENUISERIE_BOIS -> 380d;
+            case DqeSemanticHelper.LOT_ELECTRICITE -> famille.equals("Tableaux electriques") ? 520d : 140d;
+            case DqeSemanticHelper.LOT_PLOMBERIE -> famille.equals("Appareils sanitaires") ? 280d : 95d;
+            case DqeSemanticHelper.LOT_CLIMATISATION -> famille.equals("Climatisation / splits") ? 750d : 410d;
+            case DqeSemanticHelper.LOT_PEINTURE, DqeSemanticHelper.LOT_REVETEMENTS_DURS, DqeSemanticHelper.LOT_FAUX_PLAFOND -> 40d;
             default -> 120d;
         };
 
@@ -214,11 +218,13 @@ public class DqeAiAnalysisService {
 
     private Double estimateImportFobPrice(Double prixLocal, String lot, String famille, String designation) {
         double ratio = switch (lot) {
-            case "Menuiserie" -> famille.equals("Fenetres") ? 0.62d : 0.7d;
-            case "Electricite" -> 0.55d;
-            case "Plomberie" -> 0.68d;
-            case "CVC" -> 0.72d;
-            case "Finitions" -> 0.78d;
+            case DqeSemanticHelper.LOT_MENUISERIE_ALU -> famille.equals("Facades vitrees") ? 0.62d : 0.7d;
+            case DqeSemanticHelper.LOT_MENUISERIE_METALLIQUE -> 0.74d;
+            case DqeSemanticHelper.LOT_MENUISERIE_BOIS -> 0.76d;
+            case DqeSemanticHelper.LOT_ELECTRICITE, DqeSemanticHelper.LOT_SECURITE -> 0.55d;
+            case DqeSemanticHelper.LOT_PLOMBERIE -> 0.68d;
+            case DqeSemanticHelper.LOT_CLIMATISATION -> 0.72d;
+            case DqeSemanticHelper.LOT_PEINTURE, DqeSemanticHelper.LOT_REVETEMENTS_DURS, DqeSemanticHelper.LOT_FAUX_PLAFOND -> 0.78d;
             default -> 0.82d;
         };
 
@@ -232,13 +238,18 @@ public class DqeAiAnalysisService {
 
     private String suggestSupplierType(String lot, String famille) {
         return switch (lot) {
-            case "Menuiserie" -> "Fabricant menuiserie aluminium";
-            case "Electricite" -> famille.equals("Tableaux")
+            case DqeSemanticHelper.LOT_MENUISERIE_ALU -> "Fabricant menuiserie aluminium";
+            case DqeSemanticHelper.LOT_MENUISERIE_METALLIQUE -> "Atelier serrurerie / ferronnerie";
+            case DqeSemanticHelper.LOT_MENUISERIE_BOIS -> "Menuisier bois / fabricant local";
+            case DqeSemanticHelper.LOT_ELECTRICITE -> famille.equals("Tableaux electriques")
                     ? "Integrateur electrique industriel"
                     : "Grossiste electrique export";
-            case "Plomberie" -> "Distributeur plomberie sanitaire";
-            case "CVC" -> "Fabricant HVAC / OEM";
-            case "Finitions" -> "Fournisseur finition chantier";
+            case DqeSemanticHelper.LOT_SECURITE -> "Integrateur securite incendie et surete";
+            case DqeSemanticHelper.LOT_PLOMBERIE -> "Distributeur plomberie sanitaire";
+            case DqeSemanticHelper.LOT_CLIMATISATION -> "Fabricant HVAC / OEM";
+            case DqeSemanticHelper.LOT_PEINTURE,
+                 DqeSemanticHelper.LOT_REVETEMENTS_DURS,
+                 DqeSemanticHelper.LOT_FAUX_PLAFOND -> "Fournisseur finition chantier";
             default -> "Fournisseur generaliste BTP";
         };
     }
@@ -246,10 +257,10 @@ public class DqeAiAnalysisService {
     private String evaluateImportRisk(String lot, String famille, String designation) {
         String normalized = designation.toLowerCase(Locale.ROOT);
 
-        if ("CVC".equals(lot) || normalized.contains("sur mesure") || normalized.contains("tableau")) {
+        if (DqeSemanticHelper.LOT_CLIMATISATION.equals(lot) || normalized.contains("sur mesure") || normalized.contains("tableau")) {
             return "ELEVE";
         }
-        if ("Menuiserie".equals(lot) || "Plomberie".equals(lot) || famille.equals("Sanitaires")) {
+        if (lot.startsWith("Menuiserie") || DqeSemanticHelper.LOT_PLOMBERIE.equals(lot) || famille.equals("Appareils sanitaires")) {
             return "MOYEN";
         }
         return "FAIBLE";
@@ -286,7 +297,7 @@ public class DqeAiAnalysisService {
             score -= 20d;
         }
 
-        if ("DQE".equals(lot) || "Autres".equals(famille)) {
+        if (DqeSemanticHelper.LOT_INCONNU.equals(lot) || "Autres".equals(famille)) {
             score -= 20d;
         }
         if ("ELEVE".equals(niveauRisque)) {
@@ -316,51 +327,6 @@ public class DqeAiAnalysisService {
         } catch (NumberFormatException exception) {
             return null;
         }
-    }
-
-    private String inferLot(String designation) {
-        String normalized = designation.toLowerCase(Locale.ROOT);
-
-        if (normalized.contains("fenetre") || normalized.contains("porte") || normalized.contains("vitrage")) {
-            return "Menuiserie";
-        }
-        if (normalized.contains("cable") || normalized.contains("eclairage") || normalized.contains("tableau")) {
-            return "Electricite";
-        }
-        if (normalized.contains("tuyau") || normalized.contains("robinet") || normalized.contains("sanitaire")) {
-            return "Plomberie";
-        }
-        if (normalized.contains("clim") || normalized.contains("ventilation") || normalized.contains("split")) {
-            return "CVC";
-        }
-        if (normalized.contains("peinture") || normalized.contains("enduit") || normalized.contains("faux plafond")) {
-            return "Finitions";
-        }
-        return "DQE";
-    }
-
-    private String inferFamille(String designation, String lot) {
-        String normalized = designation.toLowerCase(Locale.ROOT);
-
-        return switch (lot) {
-            case "Menuiserie" -> normalized.contains("porte") ? "Portes" : "Fenetres";
-            case "Electricite" -> normalized.contains("tableau") ? "Tableaux" : "Cables";
-            case "Plomberie" -> normalized.contains("sanitaire") ? "Sanitaires" : "Tuyauterie";
-            case "CVC" -> normalized.contains("ventilation") ? "Ventilation" : "Climatisation";
-            case "Finitions" -> normalized.contains("faux plafond") ? "Faux plafond" : "Peinture";
-            default -> "Autres";
-        };
-    }
-
-    private String inferUnit(String designation) {
-        String normalized = designation.toLowerCase(Locale.ROOT);
-        if (normalized.contains("m2")) {
-            return "m2";
-        }
-        if (normalized.contains("ml")) {
-            return "ml";
-        }
-        return "U";
     }
 
     private double round(double value) {

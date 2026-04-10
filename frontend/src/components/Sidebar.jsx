@@ -1,62 +1,151 @@
+// ===============================
+// 1. IMPORTS
+// ===============================
+// useState sert a gerer les champs de login dans la sidebar.
+// NavLink sert a garder une navigation react-router propre avec un etat actif visible.
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 
-const NAV_ITEMS = [
+// ===============================
+// 2. NAVIGATION METIER
+// ===============================
+// On regroupe la navigation par workflow utilisateur et non plus par type d'outil.
+// Cela rend l'experience plus proche d'un vrai SaaS.
+const NAV_GROUPS = [
   {
-    to: "/",
-    label: "Accueil",
-    description: "Presentation du produit et porte d'entree",
+    title: "Accueil",
+    items: [
+      {
+        to: "/",
+        label: "Vue d'ensemble",
+        description: "Landing, acces, demo et point d'entree",
+      },
+    ],
   },
   {
-    to: "/direction",
-    label: "Direction",
-    description: "KPI, synthese et vision executive",
+    title: "Projet",
+    items: [
+      {
+        to: "/project",
+        label: "Vue projet",
+        description: "Vue d'ensemble, cadre budgetaire et actions rapides",
+      },
+      {
+        to: "/projects/create",
+        label: "Structure & hypotheses",
+        description: "Projet actif, structure, hypotheses et cadre CAPEX",
+      },
+    ],
   },
   {
-    to: "/demo",
-    label: "DQE intelligent",
-    description: "Pipeline complet, scoring, enrichissement et import",
+    title: "Donnees & DQE",
+    items: [
+      {
+        to: "/import",
+        label: "Import DQE",
+        description: "Chargement, sourcing, audit et preparation",
+      },
+      {
+        to: "/demo-classic",
+        label: "DQE brut",
+        description: "Lecture standard et controle de qualite",
+      },
+      {
+        to: "/demo",
+        label: "DQE enrichi (IA)",
+        description: "Structuration, corrections et import des lignes",
+      },
+      {
+        to: "/demo-ai",
+        label: "Historique IA",
+        description: "Lecture IA, scoring et comparaisons",
+      },
+    ],
   },
   {
-    to: "/demo-ai",
-    label: "Demo AI",
-    description: "Lecture AI enrichie et import propre",
+    title: "Analyse & optimisation",
+    items: [
+      {
+        to: "/demo-ai",
+        label: "Scoring IA",
+        description: "Lecture enrichie et suggestions intelligentes",
+      },
+      {
+        to: "/import",
+        label: "Audit Import Chine",
+        description: "Arbitrage sourcing import / local",
+      },
+      {
+        to: "/direction",
+        label: "Optimisation CAPEX",
+        description: "Comparaison de scenarios et recommandations",
+      },
+    ],
   },
   {
-    to: "/demo-classic",
-    label: "Demo classique",
-    description: "Analyse DQE standard et score de qualite",
+    title: "Decision & pilotage",
+    items: [
+      {
+        to: "/direction",
+        label: "KPI Direction",
+        description: "Synthese CAPEX, familles, lots et arbitrages",
+      },
+      {
+        to: "/zones",
+        label: "Heatmap zones",
+        description: "Lecture batiment / niveau et concentration CAPEX",
+      },
+    ],
   },
   {
-    to: "/import",
-    label: "Import",
-    description: "Sourcing, matrices et chargement DQE",
+    title: "Chantier",
+    items: [
+      {
+        to: "/chantier",
+        label: "Suivi couts",
+        description: "Lecture terrain et decisions operationnelles",
+      },
+      {
+        to: "/planning",
+        label: "Planning",
+        description: "Ordonnancement, avancement et rythme",
+      },
+    ],
   },
   {
-    to: "/chantier",
-    label: "Chantier",
-    description: "Couts terrain et decisions operationnelles",
+    title: "Finance",
+    items: [
+      {
+        to: "/finance",
+        label: "Budget & cashflow",
+        description: "Lecture MVP des budgets, engages et projections",
+      },
+    ],
   },
   {
-    to: "/zones",
-    label: "Zones",
-    description: "Lecture batiment, niveau et heatmap CAPEX",
-  },
-  {
-    to: "/planning",
-    label: "Planning",
-    description: "Avancement, rythme et completude",
-  },
-  {
-    to: "/projects/create",
-    label: "Nouveau projet",
-    description: "Creation complete avec structure et hypotheses",
+    title: "Administration",
+    items: [
+      {
+        to: "/admin",
+        label: "Projet actif & session",
+        description: "Projet, utilisateur, parametres et feuille de route",
+      },
+    ],
   },
 ];
 
+// ===============================
+// 3. COMPOSANT PRINCIPAL
+// ===============================
 export default function Sidebar({ auth, projectContext }) {
+  // Champs de connexion inline dans la sidebar.
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // On calcule le nom du projet actif pour donner du contexte a l'utilisateur.
+  const activeProjectName =
+    projectContext.projects.find((project) => String(project.id) === projectContext.activeProjectId)?.name ??
+    "Aucun projet selectionne";
 
   return (
     <aside className="sidebar">
@@ -64,20 +153,28 @@ export default function Sidebar({ auth, projectContext }) {
         <p className="eyebrow">SP2I Build</p>
         <h1>BI Workspace</h1>
         <p className="sidebar-copy">
-          Une navigation claire pour explorer plusieurs angles du pilotage CAPEX.
+          Une navigation SaaS organisee par workflow metier, pour passer du DQE brut a la decision.
         </p>
       </div>
 
-      <nav className="sidebar-nav">
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) => `sidebar-link ${isActive ? "sidebar-link-active" : ""}`}
-          >
-            <strong>{item.label}</strong>
-            <span>{item.description}</span>
-          </NavLink>
+      <nav className="sidebar-nav sidebar-nav-groups">
+        {NAV_GROUPS.map((group) => (
+          <section className="sidebar-group" key={group.title}>
+            <p className="sidebar-group-title">{group.title}</p>
+
+            <div className="sidebar-group-links">
+              {group.items.map((item) => (
+                <NavLink
+                  key={`${group.title}-${item.to}-${item.label}`}
+                  to={item.to}
+                  className={({ isActive }) => `sidebar-link ${isActive ? "sidebar-link-active" : ""}`}
+                >
+                  <strong>{item.label}</strong>
+                  <span>{item.description}</span>
+                </NavLink>
+              ))}
+            </div>
+          </section>
         ))}
       </nav>
 
@@ -88,6 +185,7 @@ export default function Sidebar({ auth, projectContext }) {
           <div className="sidebar-card">
             <strong>{auth.authEmail}</strong>
             <span className="sidebar-muted">Session JWT active</span>
+
             <button className="ghost-button" type="button" onClick={auth.logout}>
               Se deconnecter
             </button>
@@ -98,6 +196,7 @@ export default function Sidebar({ auth, projectContext }) {
               <span>Email</span>
               <input value={email} onChange={(event) => setEmail(event.target.value)} />
             </label>
+
             <label className="filter-field">
               <span>Mot de passe</span>
               <input
@@ -106,6 +205,7 @@ export default function Sidebar({ auth, projectContext }) {
                 onChange={(event) => setPassword(event.target.value)}
               />
             </label>
+
             <div className="sidebar-actions">
               <button
                 className="primary-button"
@@ -115,6 +215,7 @@ export default function Sidebar({ auth, projectContext }) {
               >
                 Login
               </button>
+
               <button
                 className="ghost-button"
                 type="button"
@@ -124,20 +225,23 @@ export default function Sidebar({ auth, projectContext }) {
                 Register
               </button>
             </div>
-            {auth.authError && <p className="error-text">{auth.authError}</p>}
+
+            {auth.authError ? <p className="error-text">{auth.authError}</p> : null}
           </div>
         )}
       </section>
 
       <section className="sidebar-section">
         <p className="eyebrow">Projet actif</p>
+
         <div className="sidebar-card">
+          <strong>{activeProjectName}</strong>
           <span className="sidebar-muted">
-            {projectContext.projects.find((project) => String(project.id) === projectContext.activeProjectId)?.name ??
-              "Aucun projet selectionne"}
+            Projet de reference pour les dashboards et imports.
           </span>
+
           <NavLink to="/projects/create" className="ghost-button sidebar-inline-link">
-            Creer un projet complet
+            Ouvrir la fiche projet
           </NavLink>
         </div>
       </section>

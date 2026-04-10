@@ -21,6 +21,17 @@ import {
   normalizeZoneLabel,
 } from "../lib/capex";
 
+const TOOLTIP_CONTENT_STYLE = {
+  backgroundColor: "#111827",
+  border: "1px solid #334155",
+  borderRadius: "12px",
+  color: "#f8fafc",
+};
+
+const TOOLTIP_TEXT_STYLE = {
+  color: "#f8fafc",
+};
+
 export function PageHeader({ eyebrow, title, description, backendHint = "", backendHintTone = "info" }) {
   return (
     <section className="page-hero">
@@ -268,6 +279,8 @@ export function MetricsGrid({ summary, mode = "default", currencyCode = "XAF" })
 }
 
 export function ChartPanel({ chartData, onBarClick, currencyCode = "XAF" }) {
+  const minChartWidth = Math.max(620, chartData.length * 108);
+
   return (
     <article className="panel chart-panel">
       <div className="panel-heading">
@@ -281,44 +294,43 @@ export function ChartPanel({ chartData, onBarClick, currencyCode = "XAF" }) {
       {chartData.length === 0 ? (
         <div className="empty-state">Aucun lot disponible pour la selection courante.</div>
       ) : (
-        <div className="chart-wrapper">
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#27324a" />
-              <XAxis dataKey="label" stroke="#94a3b8" />
-              <YAxis stroke="#94a3b8" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#111827",
-                  border: "1px solid #334155",
-                  borderRadius: "12px",
-                  color: "#e2e8f0",
-                }}
-                formatter={(value, key, payload) => {
-                  if (key === "capexBrut") {
-                    return [formatCurrency(value, currencyCode), "Montant"];
-                  }
-                    return [formatCurrency(value, currencyCode), payload?.payload?.label];
-                  }}
-                  labelFormatter={(label, payload) => {
-                    const row = payload?.[0]?.payload;
-                    if (!row) {
-                      return label;
+        <div className="chart-scroll chart-scroll-x">
+          <div className="chart-canvas" style={{ minWidth: `${minChartWidth}px` }}>
+            <ResponsiveContainer width="100%" height={288}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#27324a" />
+                <XAxis dataKey="label" stroke="#94a3b8" tick={{ fill: "#cbd5e1", fontSize: 11 }} />
+                <YAxis stroke="#94a3b8" tick={{ fill: "#cbd5e1", fontSize: 11 }} />
+                <Tooltip
+                  contentStyle={TOOLTIP_CONTENT_STYLE}
+                  itemStyle={TOOLTIP_TEXT_STYLE}
+                  labelStyle={TOOLTIP_TEXT_STYLE}
+                  formatter={(value, key, payload) => {
+                    if (key === "capexBrut") {
+                      return [formatCurrency(value, currencyCode), "Montant"];
                     }
-                    return `${row.label} | +${formatCurrency(row.gainTotal, currencyCode)} | ${formatPercent(row.taux)}`;
-                  }}
-                />
-              <Bar dataKey="capexBrut" radius={[10, 10, 0, 0]} onClick={(data) => onBarClick(data.name)}>
-                {chartData.map((entry) => (
-                  <Cell
-                    key={entry.name}
-                    fill={entry.isActive ? "#22c55e" : "#22d3ee"}
-                    cursor="pointer"
+                      return [formatCurrency(value, currencyCode), payload?.payload?.label];
+                    }}
+                    labelFormatter={(label, payload) => {
+                      const row = payload?.[0]?.payload;
+                      if (!row) {
+                        return label;
+                      }
+                      return `${row.label} | +${formatCurrency(row.gainTotal, currencyCode)} | ${formatPercent(row.taux)}`;
+                    }}
                   />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+                <Bar dataKey="capexBrut" radius={[10, 10, 0, 0]} onClick={(data) => onBarClick(data.name)}>
+                  {chartData.map((entry) => (
+                    <Cell
+                      key={entry.name}
+                      fill={entry.isActive ? "#22c55e" : "#22d3ee"}
+                      cursor="pointer"
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
     </article>
@@ -330,54 +342,54 @@ export function FamilyPanel({ familyEntries, onSelect, currencyCode = "XAF" }) {
     ...entry,
     label: entry.label || entry.name,
   }));
+  const chartHeight = Math.max(260, chartData.length * 52);
 
   return (
     <article className="panel side-panel">
       <p className="panel-label">Vue rapide</p>
       <h3>Repartition familles</h3>
-      <div className="chart-wrapper chart-wrapper-compact">
+      <div className="chart-wrapper chart-wrapper-compact chart-scroll chart-scroll-y">
         {chartData.length === 0 ? (
           <div className="empty-state">Aucune famille disponible.</div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              layout="vertical"
-              margin={{ top: 8, right: 10, left: 10, bottom: 8 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(97, 118, 148, 0.18)" />
-              <XAxis
-                type="number"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "#9fb0c8", fontSize: 11 }}
-              />
-              <YAxis
-                type="category"
-                dataKey="label"
-                width={158}
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "#d7e3f8", fontSize: 11 }}
-              />
-              <Tooltip
-                cursor={{ fill: "rgba(23, 201, 100, 0.08)" }}
-                contentStyle={{
-                  background: "#111a2d",
-                  border: "1px solid rgba(84, 99, 129, 0.45)",
-                  borderRadius: 14,
-                  color: "#dbe7fa",
-                }}
-                formatter={(value) => formatCurrency(value, currencyCode)}
-                labelFormatter={(label) => label}
-              />
-              <Bar dataKey="capexBrut" radius={[0, 8, 8, 0]} onClick={(payload) => onSelect(payload.name)}>
-                {chartData.map((entry) => (
-                  <Cell key={entry.name} fill={entry.isActive ? "#23c16b" : "#35c5dd"} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="chart-canvas" style={{ height: `${chartHeight}px` }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                layout="vertical"
+                margin={{ top: 8, right: 10, left: 10, bottom: 8 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(97, 118, 148, 0.18)" />
+                <XAxis
+                  type="number"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#9fb0c8", fontSize: 11 }}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="label"
+                  width={158}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#d7e3f8", fontSize: 11 }}
+                />
+                <Tooltip
+                  cursor={{ fill: "rgba(23, 201, 100, 0.08)" }}
+                  contentStyle={TOOLTIP_CONTENT_STYLE}
+                  itemStyle={TOOLTIP_TEXT_STYLE}
+                  labelStyle={TOOLTIP_TEXT_STYLE}
+                  formatter={(value) => formatCurrency(value, currencyCode)}
+                  labelFormatter={(label) => label}
+                />
+                <Bar dataKey="capexBrut" radius={[0, 8, 8, 0]} onClick={(payload) => onSelect(payload.name)}>
+                  {chartData.map((entry) => (
+                    <Cell key={entry.name} fill={entry.isActive ? "#23c16b" : "#35c5dd"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </div>
     </article>
@@ -394,6 +406,7 @@ export function StructureBreakdownPanel({
     ...entry,
     label: entry.label || entry.name,
   }));
+  const chartHeight = Math.max(260, chartData.length * 52);
 
   return (
     <article className="panel">
@@ -404,60 +417,59 @@ export function StructureBreakdownPanel({
         </div>
       </div>
 
-      <div className="chart-wrapper chart-wrapper-compact">
+      <div className="chart-wrapper chart-wrapper-compact chart-scroll chart-scroll-y">
         {chartData.length === 0 ? (
           <div className="empty-state">Aucune donnee disponible.</div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              layout="vertical"
-              margin={{ top: 8, right: 10, left: 10, bottom: 8 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(97, 118, 148, 0.18)" />
-              <XAxis
-                type="number"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "#9fb0c8", fontSize: 11 }}
-              />
-              <YAxis
-                type="category"
-                dataKey="label"
-                width={148}
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "#d7e3f8", fontSize: 11 }}
-              />
-              <Tooltip
-                cursor={{ fill: "rgba(53, 197, 221, 0.08)" }}
-                contentStyle={{
-                  background: "#111a2d",
-                  border: "1px solid rgba(84, 99, 129, 0.45)",
-                  borderRadius: 14,
-                  color: "#dbe7fa",
-                }}
-                formatter={(value, key, payload) => {
-                  if (key === "capexBrut") {
-                    return [formatCurrency(value, currencyCode), "Montant"];
-                  }
-                  return [value, payload?.payload?.label];
-                }}
-                labelFormatter={(label, payload) => {
-                  const row = payload?.[0]?.payload;
-                  if (!row) {
-                    return label;
-                  }
-                  return `${row.label} | ${row.count} ligne(s)`;
-                }}
-              />
-              <Bar dataKey="capexBrut" radius={[0, 8, 8, 0]} onClick={(payload) => onSelect(payload.name)}>
-                {chartData.map((entry) => (
-                  <Cell key={entry.name} fill={entry.isActive ? "#23c16b" : "#35c5dd"} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="chart-canvas" style={{ height: `${chartHeight}px` }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                layout="vertical"
+                margin={{ top: 8, right: 10, left: 10, bottom: 8 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(97, 118, 148, 0.18)" />
+                <XAxis
+                  type="number"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#9fb0c8", fontSize: 11 }}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="label"
+                  width={148}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#d7e3f8", fontSize: 11 }}
+                />
+                <Tooltip
+                  cursor={{ fill: "rgba(53, 197, 221, 0.08)" }}
+                  contentStyle={TOOLTIP_CONTENT_STYLE}
+                  itemStyle={TOOLTIP_TEXT_STYLE}
+                  labelStyle={TOOLTIP_TEXT_STYLE}
+                  formatter={(value, key, payload) => {
+                    if (key === "capexBrut") {
+                      return [formatCurrency(value, currencyCode), "Montant"];
+                    }
+                    return [value, payload?.payload?.label];
+                  }}
+                  labelFormatter={(label, payload) => {
+                    const row = payload?.[0]?.payload;
+                    if (!row) {
+                      return label;
+                    }
+                    return `${row.label} | ${row.count} ligne(s)`;
+                  }}
+                />
+                <Bar dataKey="capexBrut" radius={[0, 8, 8, 0]} onClick={(payload) => onSelect(payload.name)}>
+                  {chartData.map((entry) => (
+                    <Cell key={entry.name} fill={entry.isActive ? "#23c16b" : "#35c5dd"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </div>
     </article>
@@ -496,6 +508,7 @@ export function BatimentNiveauHeatmapPanel({
   currencyCode = "XAF",
 }) {
   const { batiments = [], niveaux = [], maxValue = 0, cells = [] } = heatmap || {};
+  const gridTemplateColumns = `220px repeat(${niveaux.length}, minmax(170px, 1fr))`;
 
   const findCell = (batiment, niveau) =>
     cells.find((cell) => cell.batiment === batiment && cell.niveau === niveau);
@@ -513,8 +526,19 @@ export function BatimentNiveauHeatmapPanel({
       {batiments.length === 0 || niveaux.length === 0 ? (
         <div className="empty-state">Aucune matrice batiment / niveau disponible.</div>
       ) : (
-        <div className="heatmap-grid">
-            <div className="heatmap-row heatmap-header">
+        <div className="heatmap-shell">
+          <div className="heatmap-legend">
+            <span className="heatmap-legend-label">Intensite CAPEX</span>
+            <div className="heatmap-legend-scale" aria-hidden="true" />
+            <div className="heatmap-legend-values">
+              <span>Faible</span>
+              <span>Forte</span>
+            </div>
+          </div>
+
+          <div className="heatmap-scroll">
+          <div className="heatmap-grid">
+            <div className="heatmap-row heatmap-header" style={{ gridTemplateColumns }}>
               <div className="heatmap-corner">Batiment / Niveau</div>
               {niveaux.map((niveau) => (
                 <div className="heatmap-column-label" key={niveau.name}>
@@ -524,23 +548,31 @@ export function BatimentNiveauHeatmapPanel({
             </div>
 
             {batiments.map((batiment) => (
-              <div className="heatmap-row" key={batiment.name}>
+              <div className="heatmap-row" key={batiment.name} style={{ gridTemplateColumns }}>
                 <div className="heatmap-row-label">{batiment.label}</div>
                 {niveaux.map((niveau) => {
                   const cell = findCell(batiment.name, niveau.name);
                   const intensity = maxValue > 0 && cell ? Math.max(cell.capexBrut / maxValue, 0.08) : 0.04;
+                  const isEmpty = !cell;
 
                   return (
                     <button
                       key={`${batiment.name}-${niveau.name}`}
                       type="button"
-                      className={`heatmap-cell ${cell?.isActive ? "heatmap-cell-active" : ""}`}
+                      className={`heatmap-cell ${cell?.isActive ? "heatmap-cell-active" : ""} ${isEmpty ? "heatmap-cell-empty" : ""}`}
                     style={{
-                      background: `linear-gradient(135deg, rgba(34, 211, 238, ${intensity}), rgba(34, 197, 94, ${Math.min(
+                      background: isEmpty
+                        ? "rgba(15, 23, 42, 0.52)"
+                        : `linear-gradient(135deg, rgba(34, 211, 238, ${intensity}), rgba(34, 197, 94, ${Math.min(
                         intensity + 0.12,
                         0.95
                       )}))`,
                     }}
+                      title={
+                        cell
+                          ? `${batiment.label} | ${niveau.label} | ${formatCurrency(cell.capexBrut, currencyCode)} | ${cell.count} ligne(s)`
+                          : `${batiment.label} | ${niveau.label} | aucun poste`
+                      }
                       onClick={() => onSelect(batiment.name, niveau.name)}
                     >
                     {cell ? (
@@ -549,13 +581,18 @@ export function BatimentNiveauHeatmapPanel({
                         <span>{cell.count} ligne(s)</span>
                       </>
                     ) : (
-                      <span>-</span>
+                      <>
+                        <strong className="heatmap-empty-value">-</strong>
+                        <span>Aucune ligne</span>
+                      </>
                     )}
                   </button>
                 );
               })}
             </div>
           ))}
+        </div>
+        </div>
         </div>
       )}
     </article>

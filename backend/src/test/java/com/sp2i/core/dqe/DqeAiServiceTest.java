@@ -4,11 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sp2i.core.openai.OpenAIService;
 import com.sp2i.dto.dqe.DqeLineAnalysisDTO;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class DqeAiServiceTest {
@@ -22,7 +25,7 @@ class DqeAiServiceTest {
 
     @Test
     void shouldSplitFrenchAmountsWithoutCollapsingUnitPriceAndTotal() throws Exception {
-        when(openAIService.callOpenAI(org.mockito.ArgumentMatchers.anyString()))
+        when(openAIService.callOpenAI(anyString()))
                 .thenThrow(new RuntimeException("fallback"));
 
         String text = """
@@ -42,7 +45,7 @@ class DqeAiServiceTest {
 
     @Test
     void shouldUseReferenceStyleContextForFoundationsBlock() throws Exception {
-        when(openAIService.callOpenAI(org.mockito.ArgumentMatchers.anyString()))
+        when(openAIService.callOpenAI(anyString()))
                 .thenThrow(new RuntimeException("fallback"));
 
         String text = """
@@ -60,12 +63,15 @@ class DqeAiServiceTest {
 
         assertThat(result).hasSize(4);
         assertThat(result).allSatisfy(line -> {
-            assertThat(line.getLot()).isEqualTo("Gros oeuvre");
-            assertThat(line.getBatiment()).isEqualTo("Bâtiment Principal");
+            assertThat(line.getLot()).isEqualTo(DqeSemanticHelper.LOT_GROS_OEUVRE);
+            assertThat(line.getBatiment()).isEqualTo("Batiment Principal");
             assertThat(line.getNiveau()).isEqualTo("FONDATIONS");
-            assertThat(line.getFamille()).isEqualTo("Structure");
         });
         assertThat(result.get(0).getDesignation()).isEqualTo("Semelles isolees - Beton de proprete");
+        assertThat(result.get(0).getFamille()).isEqualTo("Beton");
+        assertThat(result.get(1).getFamille()).isEqualTo("Beton");
+        assertThat(result.get(2).getFamille()).isEqualTo("Coffrage");
+        assertThat(result.get(3).getFamille()).isEqualTo("Acier");
         assertThat(result.get(0).getPrixUnitaire()).isEqualTo(338_720d);
         assertThat(result.get(0).getTotal()).isEqualTo(1_039_870d);
     }
@@ -109,20 +115,21 @@ class DqeAiServiceTest {
 
         assertThat(result).hasSize(2);
         assertThat(result).allSatisfy(line -> {
-            assertThat(line.getLot()).isEqualTo("Gros oeuvre");
-            assertThat(line.getBatiment()).isEqualTo("Bâtiment Principal");
+            assertThat(line.getLot()).isEqualTo(DqeSemanticHelper.LOT_GROS_OEUVRE);
+            assertThat(line.getBatiment()).isEqualTo("Batiment Principal");
             assertThat(line.getNiveau()).isEqualTo("ETAGE 1");
             assertThat(line.getPrixUnitaire()).isNotNull();
             assertThat(line.getTotal()).isNotNull();
         });
         assertThat(result.get(0).getDesignation()).isEqualTo("Poteaux en BA - Beton 400");
-        assertThat(result.get(0).getFamille()).isEqualTo("Structure");
+        assertThat(result.get(0).getFamille()).isEqualTo("Beton");
+        assertThat(result.get(1).getFamille()).isEqualTo("Acier");
         assertThat(result.get(1).getUnite()).isEqualTo("kg");
     }
 
     @Test
     void shouldNotInferFakeSsLevelFromOrdinaryWords() throws Exception {
-        when(openAIService.callOpenAI(org.mockito.ArgumentMatchers.anyString()))
+        when(openAIService.callOpenAI(anyString()))
                 .thenThrow(new RuntimeException("fallback"));
 
         String text = """
@@ -147,14 +154,16 @@ class DqeAiServiceTest {
         List<DqeLineAnalysisDTO> result = dqeAiService.analyze(csv);
 
         assertThat(result).hasSize(2);
-        assertThat(result.get(0).getLot()).isEqualTo("Gros oeuvre");
+        assertThat(result.get(0).getLot()).isEqualTo(DqeSemanticHelper.LOT_GROS_OEUVRE);
         assertThat(result.get(0).getBatiment()).isEqualTo("Site");
         assertThat(result.get(0).getNiveau()).isEqualTo("GLOBAL");
         assertThat(result.get(0).getDesignation()).isEqualTo("Mobilisation");
-        assertThat(result.get(1).getBatiment()).isEqualTo("Bâtiment Principal");
+        assertThat(result.get(0).getFamille()).isEqualTo("Installation de chantier");
+        assertThat(result.get(1).getBatiment()).isEqualTo("Batiment Principal");
         assertThat(result.get(1).getNiveau()).isEqualTo("RDC");
         assertThat(result.get(1).getPrixUnitaire()).isEqualTo(338_720d);
         assertThat(result.get(1).getTotal()).isEqualTo(1_039_870d);
+        assertThat(result.get(1).getFamille()).isEqualTo("Beton");
     }
 
     @Test
@@ -171,10 +180,53 @@ class DqeAiServiceTest {
         assertThat(result.get(0).getDesignation()).isEqualTo("Mobilisation");
         assertThat(result.get(0).getBatiment()).isEqualTo("Site");
         assertThat(result.get(0).getNiveau()).isEqualTo("GLOBAL");
-        assertThat(result.get(0).getLot()).isEqualTo("Gros oeuvre");
+        assertThat(result.get(0).getLot()).isEqualTo(DqeSemanticHelper.LOT_GROS_OEUVRE);
         assertThat(result.get(1).getDesignation()).isEqualTo("Poteaux en BA - Beton 400");
-        assertThat(result.get(1).getBatiment()).isEqualTo("Bâtiment Principal");
+        assertThat(result.get(1).getBatiment()).isEqualTo("Batiment Principal");
         assertThat(result.get(1).getNiveau()).isEqualTo("RDC");
-        assertThat(result.get(1).getLot()).isEqualTo("Gros oeuvre");
+        assertThat(result.get(1).getLot()).isEqualTo(DqeSemanticHelper.LOT_GROS_OEUVRE);
+        assertThat(result.get(1).getFamille()).isEqualTo("Beton");
+    }
+
+    @Test
+    void shouldUseBusinessClassificationPromptForOpenAiAnalysis() throws Exception {
+        when(openAIService.callOpenAI(anyString())).thenReturn("[]");
+
+        dqeAiService.analyze("Poste test sans format structure");
+
+        ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+        verify(openAIService).callOpenAI(promptCaptor.capture());
+
+        String prompt = promptCaptor.getValue();
+        assertThat(prompt).contains("Tu es un expert BTP specialise en lecture et classification de DQE.");
+        assertThat(prompt).contains("LOT 1 : Gros oeuvre et demolition");
+        assertThat(prompt).contains("FORMAT JSON ATTENDU PAR LE PROJET");
+        assertThat(prompt).contains("\"prixUnitaire\"");
+        assertThat(prompt).contains("TEXTE A ANALYSER");
+    }
+
+    @Test
+    void shouldClassifyRepresentativeFallbackLinesWithBusinessTaxonomy() throws Exception {
+        when(openAIService.callOpenAI(anyString()))
+                .thenThrow(new RuntimeException("fallback"));
+
+        String text = """
+                Porte en alu 220x150 m2 9.9 138000 1366200
+                Bloc autonome eclairage securite etanche U 64 67275 4305600
+                Faux plafonds en staff lisse decorative m2 182 23000 4186000
+                Panneau composite Alucobond sur facade exterieure m2 190 747750 142099750
+                """;
+
+        List<DqeLineAnalysisDTO> result = dqeAiService.analyze(text);
+
+        assertThat(result).hasSize(4);
+        assertThat(result.get(0).getLot()).isEqualTo(DqeSemanticHelper.LOT_MENUISERIE_ALU);
+        assertThat(result.get(0).getFamille()).isEqualTo("Portes aluminium");
+        assertThat(result.get(1).getLot()).isEqualTo(DqeSemanticHelper.LOT_SECURITE);
+        assertThat(result.get(1).getFamille()).isEqualTo("Eclairage");
+        assertThat(result.get(2).getLot()).isEqualTo(DqeSemanticHelper.LOT_FAUX_PLAFOND);
+        assertThat(result.get(2).getFamille()).isEqualTo("Faux plafond BA13");
+        assertThat(result.get(3).getLot()).isEqualTo(DqeSemanticHelper.LOT_ALUCOBOND);
+        assertThat(result.get(3).getFamille()).isEqualTo("Panneaux Alucobond");
     }
 }

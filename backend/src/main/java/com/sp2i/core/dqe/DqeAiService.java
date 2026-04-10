@@ -74,26 +74,108 @@ public class DqeAiService {
     }
 
     private List<DqeLineAnalysisDTO> analyzeWithOpenAi(String text) throws Exception {
-        String prompt = """
-                Tu es un expert en DQE batiment.
-                Transforme ce texte en lignes structurees.
-                Retourne uniquement un JSON tableau valide.
-                Champs :
-                designation, quantite, unite, prixUnitaire, total, lot, famille, batiment, niveau, erreurs.
-                Regles :
-                - corriger incoherences
-                - calculer total si manquant
-                - classifier intelligemment
-                - si batiment ou niveau sont introuvables, utiliser BATIMENT_A_VERIFIER et NIVEAU_A_VERIFIER
-
-                TEXTE A ANALYSER :
-                """ + System.lineSeparator() + text;
+        String prompt = buildDqeClassificationPrompt(text);
 
         String content = openAIService.callOpenAI(prompt);
         return objectMapper.readValue(
                 content,
                 objectMapper.getTypeFactory().constructCollectionType(List.class, DqeLineAnalysisDTO.class)
         );
+    }
+
+    private String buildDqeClassificationPrompt(String text) {
+        return """
+                Tu es un expert BTP specialise en lecture et classification de DQE.
+
+                Ta mission :
+                - lire chaque ligne du DQE
+                - identifier le LOT contractuel correspondant
+                - identifier la FAMILLE technique correspondante
+                - retourner uniquement un JSON tableau valide, sans commentaire
+
+                OBJECTIF :
+                Produire une sortie propre, coherente et exploitable directement par un backend CAPEX.
+
+                REGLES STRICTES SUR LES LOTS :
+                - LOT 1 : Gros oeuvre et demolition
+                - LOT 2 : Etancheite
+                - LOT 3 : Revetements durs
+                - LOT 4 : Menuiserie aluminium et vitrerie
+                - LOT 5 : Menuiserie metallique et ferronnerie
+                - LOT 6 : Menuiserie bois
+                - LOT 7 : Electricite
+                - LOT 8 : Climatisation
+                - LOT 9 : Securite incendie et videosurveillance
+                - LOT 10 : Plomberie sanitaire
+                - LOT 11 : Faux plafond et cloisons BA13
+                - LOT 12 : Ascenseur
+                - LOT 13 : Alucobond
+                - LOT 14 : Peinture
+
+                REGLES STRICTES SUR LES FAMILLES :
+                Utilise en priorite cette liste metier :
+                - Beton, Coffrage, Acier, Maconnerie, Enduits, Finitions tableaux,
+                  Plancher hourdis, Escaliers BA, Voiles BA, Poutres BA, Poteaux BA,
+                  Linteaux BA, Demolition, Evacuation gravats, Installation de chantier,
+                  Materiel de chantier, Securite / ASE, Etudes techniques, Decapage sols,
+                  Longrines, Semelles isolees, Dallage beton, Reservations / calfeutrements,
+                  Scellements / raccordements, Marches d'acces, Etancheite monocouche,
+                  Releves d'etancheite, Etancheite locaux humides, Carrelage sol,
+                  Carrelage mur, Plinthes, Ragreage, Chape, Chassis aluminium, Vitrage,
+                  Portes aluminium, Facades vitrees, Portes metalliques, Grilles,
+                  Garde-corps metalliques, Serrurerie, Portes bois, Placards bois,
+                  Habillages bois, Cables electriques, Gaines / conduits, Tableaux electriques,
+                  Appareillage, Eclairage, Chemins de cables, Mise a la terre,
+                  Groupe electrogene, Centrale solaire, Onduleurs, Batteries,
+                  Climatisation / splits, Reseaux frigorifiques, Ventilation,
+                  Detection incendie, Extinction / RIA, Cameras videosurveillance,
+                  NVR / enregistreurs, Controle d'acces, Plomberie EF/EC,
+                  Evacuation EU/EV, Appareils sanitaires, Robinetterie, Chauffe-eau,
+                  Cloisons BA13, Faux plafond BA13, Suspentes / rails / montants,
+                  Isolation acoustique, Ascenseur, Panneaux Alucobond, Ossature facade,
+                  Fixations facade, Peinture murs, Peinture plafonds, Sous-couche / impression,
+                  Enduits de finition, Terrassement, Remblai / compactage, Drainage,
+                  Cablage informatique, Baie de brassage, Onduleurs IT, Desenfumage,
+                  BAES, Traitement d'eau, Pompes de surpression, Reseau incendie,
+                  Isolation thermique, Pare-vapeur.
+
+                Si un poste ne correspond a aucune famille existante :
+                - cree une nouvelle famille courte, technique et professionnelle
+                - evite "Divers" ou "Autres" sauf impossibilite reelle
+
+                REGLES DE SORTIE OBLIGATOIRES :
+                - retourne uniquement un JSON tableau valide
+                - un objet par ligne DQE
+                - ne jamais modifier les valeurs techniques lues dans le document
+                - si total est absent mais que quantite et prixUnitaire existent, calcule total
+                - si batiment ou niveau sont introuvables, utiliser BATIMENT_A_VERIFIER et NIVEAU_A_VERIFIER
+                - si une ligne est douteuse, renseigner erreurs avec des codes explicites
+
+                FORMAT JSON ATTENDU PAR LE PROJET :
+                [
+                  {
+                    "designation": "...",
+                    "lot": "...",
+                    "famille": "...",
+                    "unite": "...",
+                    "quantite": 0,
+                    "prixUnitaire": 0,
+                    "total": 0,
+                    "batiment": "...",
+                    "niveau": "...",
+                    "erreurs": []
+                  }
+                ]
+
+                REGLES METIER COMPLEMENTAIRES :
+                - le lot doit refleter la division contractuelle du projet
+                - la famille doit refleter la nature technique la plus specifique possible
+                - si plusieurs mots-cles existent, choisir la famille la plus precise
+                - produire une classification homogene sur tout le document
+                - ne retourne aucun texte hors JSON
+
+                TEXTE A ANALYSER :
+                """ + System.lineSeparator() + text;
     }
 
     private List<DqeLineAnalysisDTO> fallbackAnalyze(String text) {
@@ -681,28 +763,48 @@ public class DqeAiService {
         String normalizedSousLot = semanticHelper.sanitize(sousLot).toLowerCase(Locale.ROOT);
 
         if ("1".equals(lotNumber)) {
-            return "Gros oeuvre";
+            return DqeSemanticHelper.LOT_GROS_OEUVRE;
         }
         if ("2".equals(lotNumber)) {
-            return "Etancheite";
+            return DqeSemanticHelper.LOT_ETANCHEITE;
         }
-        if ("3".equals(lotNumber) || "11".equals(lotNumber) || "13".equals(lotNumber) || "14".equals(lotNumber)) {
-            return "Finitions";
+        if ("3".equals(lotNumber)) {
+            return DqeSemanticHelper.LOT_REVETEMENTS_DURS;
         }
-        if ("4".equals(lotNumber) || "5".equals(lotNumber) || "6".equals(lotNumber)) {
-            return "Menuiserie";
+        if ("4".equals(lotNumber)) {
+            return DqeSemanticHelper.LOT_MENUISERIE_ALU;
         }
-        if ("7".equals(lotNumber) || "9".equals(lotNumber)) {
-            return "Electricite";
+        if ("5".equals(lotNumber)) {
+            return DqeSemanticHelper.LOT_MENUISERIE_METALLIQUE;
+        }
+        if ("6".equals(lotNumber)) {
+            return DqeSemanticHelper.LOT_MENUISERIE_BOIS;
+        }
+        if ("7".equals(lotNumber)) {
+            return DqeSemanticHelper.LOT_ELECTRICITE;
         }
         if ("8".equals(lotNumber)) {
-            return "CVC";
+            return DqeSemanticHelper.LOT_CLIMATISATION;
+        }
+        if ("9".equals(lotNumber)) {
+            return DqeSemanticHelper.LOT_SECURITE;
         }
         if ("10".equals(lotNumber)) {
-            return normalizedSousLot.contains("ventilation") ? "CVC" : "Plomberie";
+            return normalizedSousLot.contains("ventilation")
+                    ? DqeSemanticHelper.LOT_CLIMATISATION
+                    : DqeSemanticHelper.LOT_PLOMBERIE;
         }
         if ("12".equals(lotNumber)) {
-            return "Equipement";
+            return DqeSemanticHelper.LOT_ASCENSEUR;
+        }
+        if ("11".equals(lotNumber)) {
+            return DqeSemanticHelper.LOT_FAUX_PLAFOND;
+        }
+        if ("13".equals(lotNumber)) {
+            return DqeSemanticHelper.LOT_ALUCOBOND;
+        }
+        if ("14".equals(lotNumber)) {
+            return DqeSemanticHelper.LOT_PEINTURE;
         }
 
         if (!sousLot.isBlank()) {

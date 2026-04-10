@@ -29,6 +29,15 @@ export default function Import({ dashboard }) {
         backendHintTone={data.backendWakeInProgress ? "warning" : "info"}
       />
 
+      <section className="section-copy-card">
+        <p className="panel-label">Donnees & DQE</p>
+        <h3>Chargement et structuration</h3>
+        <p className="helper-text">
+          Cette zone sert a importer les fichiers, constituer un DQE propre et preparer la base
+          exploitable pour l'analyse CAPEX.
+        </p>
+      </section>
+
       <section className="top-grid">
         <FilterPanel filters={filters} data={data} projectContext={projectContext} />
         <ImportPanel importState={importState} projectContext={projectContext} />
@@ -44,9 +53,27 @@ export default function Import({ dashboard }) {
       {(data.loading || data.catalogLoading) && <LoadingPanel message="Chargement de l'espace import..." />}
       <ErrorPanel error={data.error} backendHint={data.backendStatusMessage} />
 
+      <section className="section-copy-card">
+        <p className="panel-label">Donnees & DQE</p>
+        <h3>Lecture structurelle du DQE</h3>
+        <p className="helper-text">
+          Cette vue aide a comprendre quels lots, familles et zones dominent deja la base du projet
+          actif.
+        </p>
+      </section>
+
       <section className="content-grid">
         <ChartPanel chartData={data.chartData} onBarClick={filters.setLotFilter} currencyCode={currencyCode} />
         <FamilyPanel familyEntries={data.familyEntries} onSelect={filters.setFamilleFilter} currencyCode={currencyCode} />
+      </section>
+
+      <section className="section-copy-card">
+        <p className="panel-label">Donnees & DQE</p>
+        <h3>Couverture et exhaustivite</h3>
+        <p className="helper-text">
+          On mesure ici le niveau de reconnaissance du DQE et sa capacite a servir de socle pour le
+          sourcing et la decision.
+        </p>
       </section>
 
       <section className="three-grid">
@@ -70,6 +97,15 @@ export default function Import({ dashboard }) {
           <strong>{coverage.families}</strong>
           <p className="helper-text">Granularite des familles prêtes pour le sourcing.</p>
         </article>
+      </section>
+
+      <section className="section-copy-card">
+        <p className="panel-label">Donnees & DQE</p>
+        <h3>Repartition spatiale</h3>
+        <p className="helper-text">
+          La lecture par batiment, niveau et heatmap permet d'identifier les zones ou les imports et
+          les familles doivent etre relus en priorite.
+        </p>
       </section>
 
       <section className="content-grid">
@@ -96,6 +132,15 @@ export default function Import({ dashboard }) {
           filters.setNiveauFilter(niveau);
         }}
       />
+
+      <section className="section-copy-card">
+        <p className="panel-label">Donnees & DQE</p>
+        <h3>Historique d'import</h3>
+        <p className="helper-text">
+          Ce bloc liste les dernieres lignes injectees dans le projet actif pour auditer rapidement
+          le resultat des imports.
+        </p>
+      </section>
 
       <RecentItemsPanel recentItems={data.recentItems} title="Dernieres lignes importees" currencyCode={currencyCode} />
     </div>
