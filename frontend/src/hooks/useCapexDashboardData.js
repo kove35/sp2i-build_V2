@@ -22,7 +22,7 @@ const GLOBAL_FILTERS_STORAGE_KEY = "sp2i-global-filters";
 const AUTH_TOKEN_STORAGE_KEY = "sp2i-auth-token";
 const AUTH_EMAIL_STORAGE_KEY = "sp2i-auth-email";
 const AUTH_USER_ID_STORAGE_KEY = "sp2i-auth-user-id";
-const DEMO_DQE_FILE_URL = "/demo/DQE_MEDICAL_CENTER_13-08-2025.pdf";
+const DEMO_DQE_FILE_URL = "/demo/DQE_SP2I_DEMO_LIGHT.csv";
 const RENDER_RETRYABLE_STATUSES = new Set([502, 503, 504]);
 const RENDER_COLD_START_RETRIES = 2;
 const RENDER_COLD_START_DELAY_MS = 2500;
@@ -268,16 +268,20 @@ export function useCapexDashboardData() {
       const projectsData = await response.json();
       setProjects(projectsData);
 
-      if (projectsData.length > 0) {
-        const storedProjectStillExists = projectsData.some(
-          (project) => String(project.id) === activeProjectId
-        );
+      if (projectsData.length === 0) {
+        setActiveProjectId("");
+        setSelectedProjectId("");
+        return;
+      }
 
-        if (!storedProjectStillExists) {
-          const firstProjectId = String(projectsData[0].id);
-          setActiveProjectId(firstProjectId);
-          setSelectedProjectId(firstProjectId);
-        }
+      const storedProjectStillExists = projectsData.some(
+        (project) => String(project.id) === activeProjectId
+      );
+
+      if (!storedProjectStillExists) {
+        const firstProjectId = String(projectsData[0].id);
+        setActiveProjectId(firstProjectId);
+        setSelectedProjectId(firstProjectId);
       }
     } catch (loadProjectsError) {
       setError(loadProjectsError.message);
@@ -740,12 +744,12 @@ export function useCapexDashboardData() {
 
       const demoFileResponse = await fetch(DEMO_DQE_FILE_URL);
       if (!demoFileResponse.ok) {
-        throw new Error("Impossible de charger le fichier reel de demonstration.");
+        throw new Error("Impossible de charger le fichier de demonstration.");
       }
 
       const demoBlob = await demoFileResponse.blob();
-      const demoFile = new File([demoBlob], "BE_MONOPROJET_V2_0_05_03.xlsx", {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      const demoFile = new File([demoBlob], "DQE_SP2I_DEMO_LIGHT.csv", {
+        type: "text/csv;charset=utf-8",
       });
 
       setDqeAnalysisFile(demoFile);
@@ -968,13 +972,13 @@ export function useCapexDashboardData() {
 
       const demoFileResponse = await fetch(DEMO_DQE_FILE_URL);
       if (!demoFileResponse.ok) {
-        throw new Error("Impossible de charger le PDF reel de demonstration.");
+        throw new Error("Impossible de charger le fichier de demonstration.");
       }
 
       setDqeFullProgress(25);
       const demoBlob = await demoFileResponse.blob();
-      const demoFile = new File([demoBlob], "DQE_MEDICAL_CENTER_13-08-2025.pdf", {
-        type: "application/pdf",
+      const demoFile = new File([demoBlob], "DQE_SP2I_DEMO_LIGHT.csv", {
+        type: "text/csv;charset=utf-8",
       });
 
       setDqeFullFile(demoFile);
