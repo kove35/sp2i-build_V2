@@ -1,6 +1,6 @@
 package com.sp2i.domain.project;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sp2i.domain.user.AppUser;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -91,7 +91,7 @@ public class CapexProject {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnore
     private AppUser owner;
 
     public CapexProject() {

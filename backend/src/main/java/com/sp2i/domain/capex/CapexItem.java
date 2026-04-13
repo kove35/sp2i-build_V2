@@ -1,6 +1,6 @@
 package com.sp2i.domain.capex;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sp2i.domain.project.CapexProject;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -61,7 +61,7 @@ public class CapexItem {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnore
     private CapexProject project;
 
     /**
