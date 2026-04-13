@@ -6,16 +6,19 @@ import {
   buildChartData,
   buildFamilyEntries,
   buildGroupedEntries,
+  buildSummaryFromItems,
   buildZoneEntries,
-  normalizeFamilyLabel,
-  normalizeLotLabel,
-  normalizeZoneLabel,
   buildQueryString,
   buildTopEconomies,
   extractOptions,
+  filterItemsByScenario,
+  normalizeFamilyLabel,
+  normalizeLotLabel,
+  normalizeZoneLabel,
 } from "../lib/capex";
 
 const ACTIVE_PROJECT_STORAGE_KEY = "sp2i-active-project-id";
+const GLOBAL_FILTERS_STORAGE_KEY = "sp2i-global-filters";
 const AUTH_TOKEN_STORAGE_KEY = "sp2i-auth-token";
 const AUTH_EMAIL_STORAGE_KEY = "sp2i-auth-email";
 const AUTH_USER_ID_STORAGE_KEY = "sp2i-auth-user-id";
@@ -87,10 +90,33 @@ function createDefaultProjectForm() {
  * Les pages React restent ainsi concentrees sur l'affichage.
  */
 export function useCapexDashboardData() {
-  const [lotFilter, setLotFilter] = useState("");
-  const [familleFilter, setFamilleFilter] = useState("");
-  const [batimentFilter, setBatimentFilter] = useState("");
-  const [niveauFilter, setNiveauFilter] = useState("");
+  const [persistedFilters, setPersistedFilters] = useState(() => {
+    try {
+      const savedFilters = window.localStorage.getItem(GLOBAL_FILTERS_STORAGE_KEY);
+      return savedFilters
+        ? JSON.parse(savedFilters)
+        : {
+            lotFilter: "",
+            familleFilter: "",
+            batimentFilter: "",
+            niveauFilter: "",
+            scenarioFilter: "",
+          };
+    } catch {
+      return {
+        lotFilter: "",
+        familleFilter: "",
+        batimentFilter: "",
+        niveauFilter: "",
+        scenarioFilter: "",
+      };
+    }
+  });
+  const [lotFilter, setLotFilter] = useState(persistedFilters.lotFilter ?? "");
+  const [familleFilter, setFamilleFilter] = useState(persistedFilters.familleFilter ?? "");
+  const [batimentFilter, setBatimentFilter] = useState(persistedFilters.batimentFilter ?? "");
+  const [niveauFilter, setNiveauFilter] = useState(persistedFilters.niveauFilter ?? "");
+  const [scenarioFilter, setScenarioFilter] = useState(persistedFilters.scenarioFilter ?? "");
 
   const [summary, setSummary] = useState(null);
   const [items, setItems] = useState([]);
@@ -169,6 +195,19 @@ export function useCapexDashboardData() {
   }, [activeProjectId, selectedProjectId]);
 
   useEffect(() => {
+    const nextFilters = {
+      lotFilter,
+      familleFilter,
+      batimentFilter,
+      niveauFilter,
+      scenarioFilter,
+    };
+
+    setPersistedFilters(nextFilters);
+    window.localStorage.setItem(GLOBAL_FILTERS_STORAGE_KEY, JSON.stringify(nextFilters));
+  }, [lotFilter, familleFilter, batimentFilter, niveauFilter, scenarioFilter]);
+
+  useEffect(() => {
     loadProjects();
   }, [authToken]);
 
@@ -201,6 +240,14 @@ export function useCapexDashboardData() {
   const dqePrixTotal = useMemo(() => {
     return normalizeNumericValue(dqeDraft.quantite) * normalizeNumericValue(dqeDraft.prixUnitaire);
   }, [dqeDraft.prixUnitaire, dqeDraft.quantite]);
+
+  const filteredItems = useMemo(() => {
+    return filterItemsByScenario(items, scenarioFilter);
+  }, [items, scenarioFilter]);
+
+  const filteredSummary = useMemo(() => {
+    return buildSummaryFromItems(filteredItems);
+  }, [filteredItems]);
 
   const activeProject = useMemo(() => {
     return projects.find((project) => String(project.id) === activeProjectId) ?? null;
@@ -472,6 +519,7 @@ export function useCapexDashboardData() {
     setFamilleFilter("");
     setBatimentFilter("");
     setNiveauFilter("");
+    setScenarioFilter("");
   }
 
   function updateDqeDraft(fieldName, value) {
@@ -1121,10 +1169,12 @@ export function useCapexDashboardData() {
       familleFilter,
       batimentFilter,
       niveauFilter,
+      scenarioFilter,
       setLotFilter,
       setFamilleFilter,
       setBatimentFilter,
       setNiveauFilter,
+      setScenarioFilter,
       clearFilters,
     },
     projectContext: {
@@ -1158,8 +1208,8 @@ export function useCapexDashboardData() {
       createProject,
     },
     data: {
-      summary,
-      items,
+      summary: filteredSummary,
+      items: filteredItems,
       allItems,
       recentItems,
       planningTasks,
@@ -1171,14 +1221,14 @@ export function useCapexDashboardData() {
       planningError,
       backendWakeInProgress,
       backendStatusMessage,
-      chartData: buildChartData(summary, lotFilter),
-      familyEntries: buildFamilyEntries(summary, familleFilter),
-      batimentEntries: buildGroupedEntries(items, "batiment", batimentFilter),
-      niveauEntries: buildGroupedEntries(items, "niveau", niveauFilter),
-      batimentNiveauHeatmap: buildBatimentNiveauHeatmap(items, batimentFilter, niveauFilter),
-      zoneEntries: buildZoneEntries(items),
-      coverageMetrics: buildCoverageMetrics(items),
-      topEconomies: buildTopEconomies(items),
+      chartData: buildChartData(filteredSummary, lotFilter),
+      familyEntries: buildFamilyEntries(filteredSummary, familleFilter),
+      batimentEntries: buildGroupedEntries(filteredItems, "batiment", batimentFilter),
+      niveauEntries: buildGroupedEntries(filteredItems, "niveau", niveauFilter),
+      batimentNiveauHeatmap: buildBatimentNiveauHeatmap(filteredItems, batimentFilter, niveauFilter),
+      zoneEntries: buildZoneEntries(filteredItems),
+      coverageMetrics: buildCoverageMetrics(filteredItems),
+      topEconomies: buildTopEconomies(filteredItems),
       lotOptions: extractOptions(allItems, "lot").map((value) => ({
         value,
         label: normalizeLotLabel(value),

@@ -25,6 +25,8 @@ import org.springframework.stereotype.Service;
 public class AuthService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthService.class);
+    private static final String TEST_ADMIN_LOGIN = "admin";
+    private static final String TEST_ADMIN_EMAIL = "admin@sp2i.local";
 
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
@@ -63,15 +65,16 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
         validateCredentials(request.getEmail(), request.getPassword());
+        String normalizedLogin = normalizeLoginIdentifier(request.getEmail());
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getEmail().trim().toLowerCase(),
+                        normalizedLogin,
                         request.getPassword()
                 )
         );
 
-        AppUser user = appUserRepository.findByEmail(request.getEmail().trim().toLowerCase())
+        AppUser user = appUserRepository.findByEmail(normalizedLogin)
                 .orElseThrow(() -> new BusinessException("Utilisateur introuvable"));
 
         String token = jwtService.generateToken(new AuthenticatedUser(user));
@@ -87,5 +90,15 @@ public class AuthService {
         if (password == null || password.isBlank()) {
             throw new BusinessException("Le mot de passe est obligatoire");
         }
+    }
+
+    private String normalizeLoginIdentifier(String email) {
+        String normalizedEmail = email.trim().toLowerCase();
+
+        if (TEST_ADMIN_LOGIN.equals(normalizedEmail)) {
+            return TEST_ADMIN_EMAIL;
+        }
+
+        return normalizedEmail;
     }
 }

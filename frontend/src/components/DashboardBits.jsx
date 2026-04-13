@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -8,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { buildGlobalFilterConfig } from "../application/filterConfig";
 import {
   BACKEND_LABEL,
   calculateGain,
@@ -115,53 +117,56 @@ export function ActiveFilterChip({ label, value, onClear }) {
 }
 
 export function FilterPanel({ filters, data, projectContext }) {
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const filterConfig = useMemo(
+    () => buildGlobalFilterConfig({ filters, data, projectContext }),
+    [filters, data, projectContext]
+  );
+
+  const activeFilterCount = [
+    filters.lotFilter,
+    filters.familleFilter,
+    filters.batimentFilter,
+    filters.niveauFilter,
+    filters.scenarioFilter,
+  ].filter(Boolean).length;
+
+  function renderFilterFields() {
+    return (
+      <>
+        {filterConfig.map((filter) => (
+          <FilterSelect
+            key={filter.key}
+            label={filter.label}
+            value={filter.value}
+            options={filter.options}
+            onChange={filter.onChange}
+            placeholder={filter.placeholder}
+          />
+        ))}
+      </>
+    );
+  }
+
   return (
     <section className="panel filters-panel">
       <div className="panel-heading">
         <div>
           <p className="panel-label">Pilotage</p>
-          <h3>Filtres dynamiques</h3>
+          <h3>Filtres globaux</h3>
         </div>
-        <button className="ghost-button" type="button" onClick={filters.clearFilters}>
-          Reinitialiser
-        </button>
+        <div className="filters-toolbar-actions">
+          <button className="ghost-button filters-mobile-trigger" type="button" onClick={() => setMobileFiltersOpen(true)}>
+            Filtres {activeFilterCount > 0 ? `(${activeFilterCount})` : ""}
+          </button>
+          <button className="ghost-button" type="button" onClick={filters.clearFilters}>
+            Reinitialiser
+          </button>
+        </div>
       </div>
 
-      <div className="filters-grid filters-grid-five">
-        <FilterSelect
-          label="Projet"
-          value={projectContext.activeProjectId}
-          options={projectContext.projects.map((project) => ({
-            label: project.name,
-            value: String(project.id),
-          }))}
-          onChange={projectContext.setActiveProjectId}
-          placeholder="Choisir un projet"
-        />
-        <FilterSelect
-          label="Lot"
-          value={filters.lotFilter}
-          options={data.lotOptions}
-          onChange={filters.setLotFilter}
-        />
-        <FilterSelect
-          label="Famille"
-          value={filters.familleFilter}
-          options={data.familleOptions}
-          onChange={filters.setFamilleFilter}
-        />
-        <FilterSelect
-          label="Batiment"
-          value={filters.batimentFilter}
-          options={data.batimentOptions}
-          onChange={filters.setBatimentFilter}
-        />
-        <FilterSelect
-          label="Niveau"
-          value={filters.niveauFilter}
-          options={data.niveauOptions}
-          onChange={filters.setNiveauFilter}
-        />
+      <div className="filters-grid filters-grid-six">
+        {renderFilterFields()}
       </div>
 
       <div className="active-filters">
@@ -181,7 +186,44 @@ export function FilterPanel({ filters, data, projectContext }) {
           value={filters.niveauFilter}
           onClear={() => filters.setNiveauFilter("")}
         />
+        <ActiveFilterChip
+          label="Scenario"
+          value={filters.scenarioFilter}
+          onClear={() => filters.setScenarioFilter("")}
+        />
       </div>
+
+      <div className={`filters-mobile-drawer ${mobileFiltersOpen ? "filters-mobile-drawer-open" : ""}`.trim()}>
+        <div className="filters-mobile-drawer-head">
+          <div>
+            <p className="panel-label">Filtres</p>
+            <h3>Pilotage global</h3>
+          </div>
+          <button className="ghost-button" type="button" onClick={() => setMobileFiltersOpen(false)}>
+            Fermer
+          </button>
+        </div>
+
+        <div className="filters-mobile-drawer-body filters-grid">
+          {renderFilterFields()}
+        </div>
+
+        <div className="filters-mobile-drawer-actions">
+          <button className="ghost-button" type="button" onClick={filters.clearFilters}>
+            Reinitialiser
+          </button>
+          <button className="primary-button" type="button" onClick={() => setMobileFiltersOpen(false)}>
+            Appliquer
+          </button>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        className={`filters-mobile-backdrop ${mobileFiltersOpen ? "filters-mobile-backdrop-visible" : ""}`.trim()}
+        aria-label="Fermer les filtres"
+        onClick={() => setMobileFiltersOpen(false)}
+      />
     </section>
   );
 }

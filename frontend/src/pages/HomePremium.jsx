@@ -3,7 +3,7 @@
 // ===============================
 // On importe React pour gerer les champs du formulaire,
 // puis React Router pour naviguer entre les pages sans recharger l'application.
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatCurrency, formatNumber } from "../lib/capex";
 
@@ -16,8 +16,8 @@ const DASHBOARD_SHORTCUTS = [
   {
     title: "Projet",
     description: "Structurer le projet, ses hypotheses et son cadre CAPEX.",
-    to: "/projects/create",
-    action: "Configurer",
+    to: "/project",
+    action: "Ouvrir",
   },
   {
     title: "DQE intelligent",
@@ -56,6 +56,7 @@ export default function HomePremium({ dashboard }) {
   // useState permet de memoriser les valeurs tapees dans les champs du formulaire.
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const previousAuthRef = useRef(auth?.isAuthenticated ?? false);
 
   // On recherche le projet actif pour personnaliser la home en mode connecte.
   const activeProject =
@@ -63,6 +64,32 @@ export default function HomePremium({ dashboard }) {
   const summary = dashboard?.data?.summary;
   const coverage = dashboard?.data?.coverageMetrics;
   const currencyCode = activeProject?.currencyCode || "XAF";
+
+  // Cette fonction centralise le bon point d'entree apres connexion.
+  // Si un projet existe deja, on va sur la vue projet.
+  // Sinon on envoie vers la creation de projet.
+  function openPostLoginDestination() {
+    if (projectContext?.projects?.length) {
+      navigate("/project");
+      return;
+    }
+
+    navigate("/projects/create");
+  }
+
+  // Quand l'utilisateur vient juste de se connecter,
+  // on le redirige automatiquement vers son dernier projet
+  // ou vers la creation de projet si aucun n'existe encore.
+  useEffect(() => {
+    const wasAuthenticated = previousAuthRef.current;
+    const isAuthenticated = auth?.isAuthenticated ?? false;
+
+    if (!wasAuthenticated && isAuthenticated) {
+      openPostLoginDestination();
+    }
+
+    previousAuthRef.current = isAuthenticated;
+  }, [auth?.isAuthenticated, projectContext?.projects?.length]);
 
   // Cette fonction appelle le backend pour connecter l'utilisateur.
   async function handleLogin() {
@@ -84,12 +111,7 @@ export default function HomePremium({ dashboard }) {
 
   // Cette fonction envoie l'utilisateur connecte vers le bon point d'entree.
   function handleOpenWorkspace() {
-    if (activeProject) {
-      navigate("/direction");
-      return;
-    }
-
-    navigate("/projects/create");
+    openPostLoginDestination();
   }
 
   // ===============================
@@ -151,11 +173,11 @@ export default function HomePremium({ dashboard }) {
 
               <div className="sp2i-auth-actions">
                 <button className="sp2i-login-button" type="button" onClick={handleOpenWorkspace}>
-                  {activeProject ? "Ouvrir le dashboard" : "Configurer mon projet"}
+                  {activeProject ? "Ouvrir la vue projet" : "Creer un nouveau projet"}
                 </button>
 
-                <button className="sp2i-register-button" type="button" onClick={() => navigate("/demo")}>
-                  Lancer la demo
+                <button className="sp2i-register-button" type="button" onClick={() => navigate("/direction")}>
+                  Ouvrir les KPI
                 </button>
               </div>
             </article>
@@ -231,8 +253,8 @@ export default function HomePremium({ dashboard }) {
               <div className="sp2i-auth-success">
                 <p>Connecte en tant que {auth.authEmail}.</p>
 
-                <button className="ghost-button" type="button" onClick={() => navigate("/direction")}>
-                  Ouvrir mes projets
+                <button className="ghost-button" type="button" onClick={handleOpenWorkspace}>
+                  Ouvrir mon espace projet
                 </button>
               </div>
             ) : null}

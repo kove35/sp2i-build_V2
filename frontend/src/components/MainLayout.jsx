@@ -1,8 +1,11 @@
 // ===============================
 // 1. IMPORTS
 // ===============================
+// On importe React pour gerer l'ouverture du menu responsive.
+import { useEffect, useState } from "react";
 // On importe le hook de localisation pour savoir si la sidebar doit etre visible.
-import { useLocation } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
+import { MOBILE_NAV_ITEMS } from "../application/sidebarConfig";
 import Sidebar from "./Sidebar";
 
 // ===============================
@@ -17,6 +20,13 @@ export default function MainLayout({ dashboard, children }) {
   const location = useLocation();
   const isHomePage = location.pathname === "/";
   const showSidebar = !isHomePage;
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Quand l'utilisateur change de page,
+  // on referme le menu mobile pour garder une navigation fluide.
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   return (
     <div className="app-shell">
@@ -25,13 +35,50 @@ export default function MainLayout({ dashboard, children }) {
 
       <div className={`app-layout ${showSidebar ? "" : "app-layout-no-sidebar"}`.trim()}>
         {showSidebar ? (
-          <Sidebar auth={dashboard.auth} projectContext={dashboard.projectContext} />
+          <Sidebar
+            auth={dashboard.auth}
+            projectContext={dashboard.projectContext}
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
         ) : null}
 
         <main className={`app-content ${showSidebar ? "" : "app-content-full"}`.trim()}>
+          {showSidebar ? (
+            <div className="app-mobile-bar">
+              <button
+                className="app-mobile-menu"
+                type="button"
+                onClick={() => setSidebarOpen((current) => !current)}
+              >
+                {sidebarOpen ? "Fermer le menu" : "Ouvrir le menu"}
+              </button>
+
+              <div className="app-mobile-context">
+                <span>Workspace SP2I</span>
+                <strong>Navigation metier</strong>
+              </div>
+            </div>
+          ) : null}
+
           {children}
         </main>
       </div>
+
+      {showSidebar ? (
+        <nav className="app-bottom-nav">
+          {MOBILE_NAV_ITEMS.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => `app-bottom-link ${isActive ? "app-bottom-link-active" : ""}`}
+            >
+              <span className="app-bottom-icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+      ) : null}
     </div>
   );
 }

@@ -357,6 +357,114 @@ export function buildTopEconomies(items) {
     .slice(0, 5);
 }
 
+export function filterItemsByScenario(items, scenarioFilter = "") {
+  if (!scenarioFilter) {
+    return items;
+  }
+
+  const normalizedScenario = String(scenarioFilter).toUpperCase();
+
+  return items.filter((item) => {
+    const variant = getDecisionVariant(item).toUpperCase();
+
+    if (normalizedScenario === "LOCAL") {
+      return variant === "LOCAL";
+    }
+
+    if (normalizedScenario === "IMPORT") {
+      return variant === "IMPORT";
+    }
+
+    if (normalizedScenario === "MIX") {
+      return variant === "MIX";
+    }
+
+    return true;
+  });
+}
+
+export function buildSummaryFromItems(items) {
+  const safeItems = items ?? [];
+  const emptySummary = {
+    capexBrut: 0,
+    capexOptimise: 0,
+    economie: 0,
+    gainTotal: 0,
+    taux: 0,
+    nbArticlesSansPrixChine: 0,
+    capexSansPrixChine: 0,
+    parLot: {},
+    parFamille: {},
+  };
+
+  if (safeItems.length === 0) {
+    return emptySummary;
+  }
+
+  const parLot = {};
+  const parFamille = {};
+
+  let capexBrut = 0;
+  let capexOptimise = 0;
+  let nbArticlesSansPrixChine = 0;
+  let capexSansPrixChine = 0;
+
+  safeItems.forEach((item) => {
+    const quantite = item?.quantite ?? 0;
+    const coutLocal = item?.coutLocal ?? item?.prixUnitaire ?? 0;
+    const coutImport = item?.coutImport;
+    const hasImportPrice = coutImport != null && Number.isFinite(coutImport);
+    const localTotal = coutLocal * quantite;
+    const importTotal = hasImportPrice ? coutImport * quantite : localTotal;
+    const optimizedTotal = Math.min(localTotal, importTotal);
+    const gainTotal = Math.max(localTotal - optimizedTotal, 0);
+    const lot = item?.lot || "Non renseigne";
+    const famille = item?.famille || "Non renseignee";
+
+    capexBrut += localTotal;
+    capexOptimise += optimizedTotal;
+
+    if (!hasImportPrice) {
+      nbArticlesSansPrixChine += 1;
+      capexSansPrixChine += localTotal;
+    }
+
+    if (!parLot[lot]) {
+      parLot[lot] = { capexBrut: 0, gainTotal: 0, taux: 0 };
+    }
+    if (!parFamille[famille]) {
+      parFamille[famille] = { capexBrut: 0, gainTotal: 0, taux: 0 };
+    }
+
+    parLot[lot].capexBrut += localTotal;
+    parLot[lot].gainTotal += gainTotal;
+    parFamille[famille].capexBrut += localTotal;
+    parFamille[famille].gainTotal += gainTotal;
+  });
+
+  Object.values(parLot).forEach((entry) => {
+    entry.taux = entry.capexBrut > 0 ? entry.gainTotal / entry.capexBrut : 0;
+  });
+
+  Object.values(parFamille).forEach((entry) => {
+    entry.taux = entry.capexBrut > 0 ? entry.gainTotal / entry.capexBrut : 0;
+  });
+
+  const economie = Math.max(capexBrut - capexOptimise, 0);
+
+  return {
+    capexBrut,
+    capexOptimise,
+    economie,
+    gainTotal: economie,
+    taux: capexBrut > 0 ? economie / capexBrut : 0,
+    nbArticlesSansPrixChine,
+    capexSansPrixChine,
+    parLot,
+    parFamille,
+  };
+}
+
 /**
  * Petit indicateur d'avancement pour la page planning.
  * On calcule un taux de completude sur 4 dimensions metier.
