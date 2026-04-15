@@ -46,7 +46,7 @@ export default function Demo({ dashboard }) {
               <input
                 className="file-input"
                 type="file"
-                accept=".pdf,.png,.jpg,.jpeg,.webp,.xlsx,.xls"
+                accept=".pdf,.png,.jpg,.jpeg,.webp,.xlsx,.xls,.csv,.json,.txt"
                 onChange={(event) => dqeState.setDqeAnalysisFile(event.target.files?.[0] ?? null)}
               />
             </label>
@@ -77,7 +77,7 @@ export default function Demo({ dashboard }) {
           )}
 
           <p className="helper-text">
-            La demo accepte PDF, image ou Excel pour montrer la puissance complete du moteur.
+            La demo accepte PDF, image, Excel ou CSV structure pour montrer la puissance complete du moteur.
           </p>
 
           {dqeState.analysisImportMessage && <p className="success-text">{dqeState.analysisImportMessage}</p>}

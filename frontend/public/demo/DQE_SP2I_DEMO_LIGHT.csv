@@ -1,0 +1,35 @@
+Lot;Sous-lot;Bâtiment;Niveau;Désignation;Unité;Quantité;PU;Total
+1;A - Installation générale;Chantier;Niveau Chantier;Mobilisation;Ens;1;3200000;3200000
+1;B - Démolition;Bâtiment Principal;RDC;Démolition cloison existante;m2;120;8500;1020000
+1;C - Fondations;Bâtiment Principal;RDC;Semelles isolées - Béton 400 hydr;m3;18;189175;3405150
+1;D - Élévation RDC;Bâtiment Principal;RDC;Poteaux en BA - Acier;kg;980;1380;1352400
+2;A - Étanchéité terrasse;Bâtiment Principal;Étage 2;Revêtement monocouche terrasse;m2;210;17276;3627960
+2;B - Étanchéité locaux humides;Bâtiment Principal;Étage 1;Étanchéité sous carrelage locaux humides;m2;64;14950;956800
+3;A - Revêtements sol;Bâtiment Principal;RDC;Carrelage grès cérame 60x60;m2;480;28750;13800000
+3;B - Revêtements muraux;Bâtiment Principal;Étage 1;Faïence murale sanitaire;m2;190;24150;4588500
+4;A - Menuiseries aluminium;Bâtiment Principal;Façade;Châssis aluminium coulissant;U;28;425000;11900000
+4;B - Vitrerie;Bâtiment Principal;Façade;Vitrage feuilleté 10 mm;m2;165;126500;20872500
+5;A - Serrurerie;Bâtiment Principal;RDC;Garde-corps métallique escalier;ml;38;115000;4370000
+5;B - Menuiseries métalliques;Bâtiment Annexe;RDC;Porte métallique coupe-feu;U;8;345000;2760000
+6;A - Menuiserie bois;Bâtiment Principal;Étage 1;Portes isoplanes bois;U;42;218500;9177000
+6;B - Agencement bois;Bâtiment Principal;Duplex 1;Placards bois mélaminé;ml;26;172500;4485000
+7;A - Électricité;Bâtiment Principal;RDC;Tableau électrique général basse tension;Ens;1;5175000;5175000
+7;B - Éclairage;Bâtiment Principal;Étage 1;Luminaire LED 600x600;U;86;40250;3461500
+7;C - Courants faibles;Bâtiment Principal;Étage 1;Prise réseau RJ45 catégorie 6;U;54;18400;993600
+8;A - Climatisation;Bâtiment Principal;Étage 1;Unité intérieure split 2CV;U;18;460000;8280000
+8;B - Réseaux frigorifiques;Bâtiment Principal;Étage 2;Liaisons frigorifiques calorifugées;ml;240;18400;4416000
+8;C - Ventilation;Bâtiment Principal;Parties Communes;Caisson de ventilation mécanique contrôlée;U;2;575000;1150000
+9;A - Sécurité incendie;Bâtiment Principal;Parties Communes;Détecteur optique de fumée adressable;U;32;86250;2760000
+9;B - Vidéo surveillance;Chantier;Parties Communes Chantier;Caméra intérieure fixe type dôme;U;12;224250;2691000
+9;C - Contrôle d'accès;Bâtiment Principal;RDC;Kit contrôle d'accès porte;U;6;230000;1380000
+10;A - Appareils sanitaires;Bâtiment Principal;Étage 1;WC à l'anglaise;U;18;264500;4761000
+10;B - Évacuations;Bâtiment Principal;RDC;Canalisation évacuation PVC D110;ml;210;11224;2357040
+10;C - Alimentation;Bâtiment Principal;RDC;Canalisation alimentation PER 16x20;ml;140;4255;595700
+10;D - Station surpression;Chantier;Niveau Chantier;Station de surpression complète;Ens;1;1725000;1725000
+11;A - Cloisons;Bâtiment Principal;Étage 1;Cloison en BA13 avec laine de verre;m2;320;39100;12512000
+11;B - Faux plafond;Bâtiment Principal;Duplex 2;Faux plafonds en staff lisse décorative;m2;182;23000;4186000
+12;A - Ascenseur;Bâtiment Principal;Parties Communes;Ascenseur de 630 kg 8 personnes;Ens;1;25300000;25300000
+13;A - Alucobond;Bâtiment Principal;Façade;Panneau composite Alucobond sur façade extérieure;m2;190;747750;142072500
+13;B - Alucobond;Bâtiment Annexe;Façade;Panneau composite Alucobond sur façade extérieure;m2;78;74750;5830500
+14;A - Peinture RDC;Bâtiment Principal;RDC;Murs - Peinture intérieure;m2;860;16325;14039500
+14;B - Peinture plafonds;Bâtiment Principal;Étage 1;Plafonds staff - Peinture intérieure;m2;804;6325;5085300

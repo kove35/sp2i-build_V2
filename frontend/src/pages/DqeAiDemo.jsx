@@ -70,7 +70,7 @@ export default function DqeAiDemo({ dashboard }) {
               <input
                 className="file-input"
                 type="file"
-                accept=".pdf,.png,.jpg,.jpeg,.webp,.xlsx,.xls"
+                accept=".pdf,.png,.jpg,.jpeg,.webp,.xlsx,.xls,.csv,.json,.txt"
                 onChange={(event) => dqeAiState.setFile(event.target.files?.[0] ?? null)}
               />
             </label>
