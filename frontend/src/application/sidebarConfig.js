@@ -1,158 +1,159 @@
 // ===============================
-// 1. CONFIG NAVIGATION SAAS
+// 1. CONFIG SIDEBAR
 // ===============================
-// Cette configuration reste volontairement simple :
-// - une seule source de verite pour la navigation
-// - aucun changement de route
-// - la possibilite d'ajouter plus tard des restrictions par role
+// La navigation reste 100% pilotee par configuration.
+// Cela permet de simplifier l'UX sans toucher aux routes React existantes.
 //
-// Les champs "roles" ne sont pas encore exploites dans le JSX,
-// mais ils preparent une navigation admin / user sans rework complet.
+// Regle produit :
+// - 5 sections maximum
+// - labels courts
+// - pas de logique metier dupliquee dans le JSX
 
 export const SIDEBAR_SECTIONS = [
   {
-    id: "direction-finance",
-    title: "Direction & Finance",
-    icon: "DF",
-    summary: "Vue executive, arbitrages CAPEX et lecture budgetaire.",
+    id: "home",
+    title: "Accueil",
+    icon: "home",
+    summary: "Vue d'ensemble, projet actif et raccourcis.",
+    items: [
+      {
+        to: "/",
+        label: "Vue",
+        description: "Accueil produit",
+        roles: ["guest", "user", "admin"],
+      },
+      {
+        to: "/project",
+        label: "Projet",
+        description: "Projet actif",
+        roles: ["user", "admin"],
+      },
+      {
+        to: "/direction",
+        label: "Rapide",
+        description: "Acces rapide CAPEX",
+        roles: ["user", "admin"],
+      },
+    ],
+  },
+  {
+    id: "steering",
+    title: "Pilotage",
+    icon: "steering",
+    summary: "CAPEX, finance, sourcing et analyse IA.",
     items: [
       {
         to: "/direction",
-        label: "Vue executive",
-        description: "KPI, synthese CAPEX et leviers d'arbitrage.",
-        mobileLabel: "Direction",
+        label: "CAPEX",
+        description: "Dashboard CAPEX",
         roles: ["user", "admin"],
       },
       {
         to: "/finance",
-        label: "Finance CAPEX",
-        description: "Budget, engagement et trajectoire financiere.",
-        mobileLabel: "Finance",
+        label: "Finance",
+        description: "Lecture budgetaire",
         roles: ["user", "admin"],
       },
-      {
-        to: "/zones",
-        label: "Analyse spatiale",
-        description: "Heatmap batiment / niveau et zones prioritaires.",
-        mobileLabel: "Zones",
-        roles: ["user", "admin"],
-      },
-    ],
-  },
-  {
-    id: "chantier-planification",
-    title: "Chantier & Planification",
-    icon: "CP",
-    summary: "Execution terrain, ordonnancement et suivi des priorites.",
-    items: [
-      {
-        to: "/planning",
-        label: "Planning chantier",
-        description: "Jalons, cadence et sequence des interventions.",
-        mobileLabel: "Planning",
-        roles: ["user", "admin"],
-      },
-      {
-        to: "/chantier",
-        label: "Suivi chantier",
-        description: "Lots critiques, lecture terrain et pilotage operationnel.",
-        mobileLabel: "Chantier",
-        roles: ["user", "admin"],
-      },
-    ],
-  },
-  {
-    id: "import-sourcing",
-    title: "Import & Sourcing",
-    icon: "IS",
-    summary: "Chargement des sources, arbitrage local vs import et preparation sourcing.",
-    items: [
       {
         to: "/import",
-        label: "Import & sourcing",
-        description: "Imports DQE, analyse sourcing et comparatif local / import.",
-        mobileLabel: "Import",
-        roles: ["user", "admin"],
-      },
-    ],
-  },
-  {
-    id: "donnees-dqe",
-    title: "Donnees & DQE",
-    icon: "DQ",
-    summary: "Controle qualite, enrichissement et lecture IA des DQE.",
-    items: [
-      {
-        to: "/demo-classic",
-        label: "DQE brut",
-        description: "Lecture standard et controle initial du document.",
-        mobileLabel: "Brut",
-        roles: ["user", "admin"],
-      },
-      {
-        to: "/demo",
-        label: "DQE enrichi",
-        description: "Structuration, corrections et import des lignes.",
-        mobileLabel: "DQE",
+        label: "Sourcing",
+        description: "Import & sourcing",
         roles: ["user", "admin"],
       },
       {
         to: "/demo-ai",
-        label: "Analyse IA DQE",
-        description: "Scoring, priorisation et comparaison des iterations.",
-        mobileLabel: "IA",
+        label: "Analyse IA",
+        description: "Scoring IA",
         roles: ["user", "admin"],
       },
     ],
   },
-];
-
-export const SIDEBAR_SUPPORT_SECTIONS = [
   {
-    id: "workspace",
-    title: "Workspace",
-    icon: "WS",
+    id: "execution",
+    title: "Execution",
+    icon: "execution",
+    summary: "Planning, ordonnancement et suivi terrain.",
     items: [
       {
-        to: "/project",
-        label: "Vue projet",
-        description: "Contexte du projet actif et cadrage general.",
+        to: "/planning",
+        label: "Planning",
+        description: "Planning chantier",
+        roles: ["user", "admin"],
+      },
+      {
+        to: "/chantier",
+        label: "Terrain",
+        description: "Suivi couts terrain",
+        roles: ["user", "admin"],
+      },
+    ],
+  },
+  {
+    id: "data",
+    title: "Donnees",
+    icon: "data",
+    summary: "DQE, structure projet et hypotheses.",
+    items: [
+      {
+        to: "/import",
+        label: "Import DQE",
+        description: "Import DQE",
+        roles: ["user", "admin"],
+      },
+      {
+        to: "/demo-classic",
+        label: "Brut",
+        description: "DQE brut",
+        roles: ["user", "admin"],
+      },
+      {
+        to: "/demo",
+        label: "Enrichi",
+        description: "DQE enrichi",
         roles: ["user", "admin"],
       },
       {
         to: "/projects/create",
-        label: "Parametres projet",
-        description: "Structure immobiliere, hypotheses et donnees de reference.",
+        label: "Structure",
+        description: "Structure & hypotheses",
         roles: ["user", "admin"],
       },
     ],
   },
   {
-    id: "support",
-    title: "Support",
-    icon: "SP",
+    id: "admin",
+    title: "Administration",
+    icon: "admin",
+    summary: "Session, projet actif et parametres.",
     items: [
       {
-        to: "/",
-        label: "Accueil",
-        description: "Landing, connexion et point d'entree produit.",
-        roles: ["guest", "user", "admin"],
+        to: "/admin",
+        label: "Session",
+        description: "Session active",
+        roles: ["user", "admin"],
       },
       {
-        to: "/admin",
-        label: "Administration",
-        description: "Session active, controles de base et supervision simple.",
-        roles: ["admin", "user"],
+        to: "/project",
+        label: "Projet actif",
+        description: "Fiche projet",
+        roles: ["user", "admin"],
+      },
+      {
+        to: "/projects/create",
+        label: "Parametres",
+        description: "Hypotheses projet",
+        roles: ["user", "admin"],
       },
     ],
   },
 ];
 
-// La bottom navigation mobile ne garde que les entrees
-// les plus frequentes pour limiter la charge cognitive.
+// En mobile, on limite la bottom navigation a 5 points d'entree.
+// Le reste reste accessible via le burger menu.
 export const MOBILE_NAV_ITEMS = [
-  { to: "/direction", label: "Direction", icon: "DF" },
-  { to: "/planning", label: "Planning", icon: "CP" },
-  { to: "/import", label: "Import", icon: "IS" },
-  { to: "/demo", label: "DQE", icon: "DQ" },
+  { to: "/", label: "Accueil", icon: "home" },
+  { to: "/direction", label: "Pilotage", icon: "steering" },
+  { to: "/planning", label: "Execution", icon: "execution" },
+  { to: "/demo", label: "Donnees", icon: "data" },
+  { to: "/admin", label: "Admin", icon: "admin" },
 ];

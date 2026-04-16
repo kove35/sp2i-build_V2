@@ -5,7 +5,8 @@
 // useLocation permet de garder la section active ouverte.
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { SIDEBAR_SECTIONS, SIDEBAR_SUPPORT_SECTIONS } from "../application/sidebarConfig";
+import { SIDEBAR_SECTIONS } from "../application/sidebarConfig";
+import NavIcon from "./NavIcon";
 
 // ===============================
 // 2. COMPOSANT PRINCIPAL
@@ -28,6 +29,9 @@ export default function Sidebar({ auth, projectContext, isOpen = false, onClose 
   const activeProjectName =
     projectContext.projects.find((project) => String(project.id) === projectContext.activeProjectId)?.name ??
     "Aucun projet selectionne";
+  const activeSection = SIDEBAR_SECTIONS.find((group) =>
+    group.items.some((item) => item.to === location.pathname)
+  );
 
   // Ce helper laisse automatiquement ouvert
   // le groupe qui contient la route active.
@@ -52,7 +56,8 @@ export default function Sidebar({ auth, projectContext, isOpen = false, onClose 
     onClose();
   }
 
-  // Petit rendu reutilisable pour ne pas dupliquer les liens.
+  // Petit rendu reutilisable :
+  // la config porte la structure, le JSX ne fait que l'afficher.
   function renderNavLinks(items, sectionTitle) {
     return items.map((item) => (
       <NavLink
@@ -61,9 +66,10 @@ export default function Sidebar({ auth, projectContext, isOpen = false, onClose 
         end
         onClick={handleNavigation}
         className={({ isActive }) => `sidebar-link ${isActive ? "sidebar-link-active" : ""}`}
+        title={item.description}
       >
+        <span className="sidebar-link-indicator" aria-hidden="true" />
         <strong className="sidebar-link-title">{item.label}</strong>
-        <span>{item.description}</span>
       </NavLink>
     ));
   }
@@ -94,13 +100,25 @@ export default function Sidebar({ auth, projectContext, isOpen = false, onClose 
         </div>
 
         <div className="sidebar-brand">
-          <p className="eyebrow">SP2I Build</p>
-          <h1>BI Workspace</h1>
+          <div className="sidebar-brand-top">
+            <span className="sidebar-brand-mark" aria-hidden="true">
+              SB
+            </span>
+            <div className="sidebar-brand-copy">
+              <p className="eyebrow">SP2I Build</p>
+              <h1>Navigation</h1>
+            </div>
+          </div>
           <p className="sidebar-copy">
-            Une navigation metier claire pour passer du DQE brut a la decision CAPEX sans multiplier
-            les points d'entree.
+            5 sections maximum pour reduire la charge cognitive et accelerer la navigation.
           </p>
         </div>
+
+        <section className="sidebar-context-card" aria-label="Contexte courant">
+          <p className="sidebar-context-label">Section active</p>
+          <strong>{activeSection?.title || "Accueil"}</strong>
+          <span>{activeSection?.summary || "Vue d'ensemble du workspace."}</span>
+        </section>
 
         <nav className="sidebar-nav sidebar-nav-groups">
           {SIDEBAR_SECTIONS.map((group) => {
@@ -117,14 +135,19 @@ export default function Sidebar({ auth, projectContext, isOpen = false, onClose 
                   aria-controls={groupPanelId}
                 >
                   <span className="sidebar-group-head">
-                    <span className="sidebar-group-icon">{group.icon}</span>
+                    <span className="sidebar-group-icon">
+                      <NavIcon name={group.icon} className="sidebar-group-icon-svg" title={group.title} />
+                    </span>
                     <span className="sidebar-group-title-wrap">
                       <span className="sidebar-group-title">{group.title}</span>
                       <span className="sidebar-group-summary">{group.summary}</span>
                     </span>
                   </span>
-                  <span className={`sidebar-group-caret ${isExpanded ? "sidebar-group-caret-open" : ""}`.trim()}>
-                    +
+                  <span className="sidebar-group-meta">
+                    <span className="sidebar-group-count">{group.items.length}</span>
+                    <span className={`sidebar-group-caret ${isExpanded ? "sidebar-group-caret-open" : ""}`.trim()}>
+                      +
+                    </span>
                   </span>
                 </button>
 
@@ -141,59 +164,21 @@ export default function Sidebar({ auth, projectContext, isOpen = false, onClose 
           })}
         </nav>
 
-        <section className="sidebar-utility">
-          {SIDEBAR_SUPPORT_SECTIONS.map((group) => (
-            <div className="sidebar-utility-block" key={group.id}>
-              <div className="sidebar-utility-head">
-                <span className="sidebar-group-icon">{group.icon}</span>
-                <span className="sidebar-group-title">{group.title}</span>
-              </div>
+        <section className="sidebar-section sidebar-section-compact">
+          <p className="eyebrow">Contexte</p>
+          <div className="sidebar-card">
+            <strong>{activeProjectName}</strong>
+            <span className="sidebar-muted">{auth.isAuthenticated ? auth.authEmail : "Mode visiteur"}</span>
 
-              <div className="sidebar-group-links">
-                {renderNavLinks(group.items, group.title)}
-              </div>
-            </div>
-          ))}
-        </section>
-
-        <section className="sidebar-section">
-          <p className="eyebrow">Session</p>
-
-          {auth.isAuthenticated ? (
-            <div className="sidebar-card">
-              <strong>{auth.authEmail}</strong>
-              <span className="sidebar-muted">Session JWT active</span>
-
+            {auth.isAuthenticated ? (
               <button className="ghost-button" type="button" onClick={auth.logout}>
                 Se deconnecter
               </button>
-            </div>
-          ) : (
-            <div className="sidebar-card">
-              <strong>Mode visiteur</strong>
-              <span className="sidebar-muted">
-                Retournez a l'accueil pour vous connecter ou lancer le projet demo.
-              </span>
-
-              <NavLink to="/" className="ghost-button sidebar-inline-link">
+            ) : (
+              <NavLink to="/" className="ghost-button sidebar-inline-link" onClick={handleNavigation}>
                 Ouvrir l'accueil
               </NavLink>
-            </div>
-          )}
-        </section>
-
-        <section className="sidebar-section">
-          <p className="eyebrow">Projet actif</p>
-
-          <div className="sidebar-card">
-            <strong>{activeProjectName}</strong>
-            <span className="sidebar-muted">
-              Projet de reference pour les dashboards et les imports globaux.
-            </span>
-
-            <NavLink to="/projects/create" className="ghost-button sidebar-inline-link">
-              Ouvrir la fiche projet
-            </NavLink>
+            )}
           </div>
         </section>
       </aside>

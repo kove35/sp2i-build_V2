@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 // On importe le hook de localisation pour savoir si la sidebar doit etre visible.
 import { NavLink, useLocation } from "react-router-dom";
 import { MOBILE_NAV_ITEMS, SIDEBAR_SECTIONS } from "../application/sidebarConfig";
+import NavIcon from "./NavIcon";
 import Sidebar from "./Sidebar";
 
 // ===============================
@@ -78,7 +79,9 @@ export default function MainLayout({ dashboard, children }) {
               end
               className={({ isActive }) => `app-bottom-link ${isActive ? "app-bottom-link-active" : ""}`}
             >
-              <span className="app-bottom-icon">{item.icon}</span>
+              <span className="app-bottom-icon">
+                <NavIcon name={item.icon} className="app-bottom-icon-svg" title={item.label} />
+              </span>
               <span>{item.label}</span>
             </NavLink>
           ))}
