@@ -5,7 +5,7 @@
 // useLocation permet de garder la section active ouverte.
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { SIDEBAR_SECTIONS, SIDEBAR_UTILITY_LINKS } from "../application/sidebarConfig";
+import { SIDEBAR_SECTIONS, SIDEBAR_SUPPORT_SECTIONS } from "../application/sidebarConfig";
 
 // ===============================
 // 2. COMPOSANT PRINCIPAL
@@ -21,7 +21,7 @@ export default function Sidebar({ auth, projectContext, isOpen = false, onClose 
   // Par defaut, les sections metier sont repliees.
   // Cela rend la sidebar plus compacte et plus lisible.
   const [collapsedGroups, setCollapsedGroups] = useState(() =>
-    Object.fromEntries(SIDEBAR_SECTIONS.map((group) => [group.title, true]))
+    Object.fromEntries(SIDEBAR_SECTIONS.map((group) => [group.id, true]))
   );
 
   // On affiche le projet actif dans la zone contextuelle.
@@ -37,15 +37,19 @@ export default function Sidebar({ auth, projectContext, isOpen = false, onClose 
       return true;
     }
 
-    return !collapsedGroups[group.title];
+    return !collapsedGroups[group.id];
   }
 
   // Cette fonction replie ou rouvre une section metier.
-  function toggleGroup(groupTitle) {
+  function toggleGroup(groupId) {
     setCollapsedGroups((current) => ({
       ...current,
-      [groupTitle]: !current[groupTitle],
+      [groupId]: !current[groupId],
     }));
+  }
+
+  function handleNavigation() {
+    onClose();
   }
 
   // Petit rendu reutilisable pour ne pas dupliquer les liens.
@@ -54,9 +58,11 @@ export default function Sidebar({ auth, projectContext, isOpen = false, onClose 
       <NavLink
         key={`${sectionTitle}-${item.to}-${item.label}`}
         to={item.to}
+        end
+        onClick={handleNavigation}
         className={({ isActive }) => `sidebar-link ${isActive ? "sidebar-link-active" : ""}`}
       >
-        <strong>{item.label}</strong>
+        <strong className="sidebar-link-title">{item.label}</strong>
         <span>{item.description}</span>
       </NavLink>
     ));
@@ -71,7 +77,11 @@ export default function Sidebar({ auth, projectContext, isOpen = false, onClose 
         aria-label="Fermer la navigation"
       />
 
-      <aside className={`sidebar ${isOpen ? "sidebar-open" : ""}`.trim()}>
+      <aside
+        id="app-sidebar"
+        className={`sidebar ${isOpen ? "sidebar-open" : ""}`.trim()}
+        aria-label="Navigation principale"
+      >
         <div className="sidebar-mobile-head">
           <div className="sidebar-mobile-brand">
             <p className="eyebrow">SP2I Build</p>
@@ -87,31 +97,39 @@ export default function Sidebar({ auth, projectContext, isOpen = false, onClose 
           <p className="eyebrow">SP2I Build</p>
           <h1>BI Workspace</h1>
           <p className="sidebar-copy">
-            Une navigation SaaS organisee par workflow metier, pour guider la decision du DQE brut
-            jusqu'au pilotage CAPEX.
+            Une navigation metier claire pour passer du DQE brut a la decision CAPEX sans multiplier
+            les points d'entree.
           </p>
         </div>
 
         <nav className="sidebar-nav sidebar-nav-groups">
           {SIDEBAR_SECTIONS.map((group) => {
             const isExpanded = isGroupExpanded(group);
+            const groupPanelId = `sidebar-group-${group.id}`;
 
             return (
-              <section className="sidebar-group" key={group.title}>
+              <section className="sidebar-group" key={group.id}>
                 <button
                   type="button"
                   className="sidebar-group-toggle"
-                  onClick={() => toggleGroup(group.title)}
+                  onClick={() => toggleGroup(group.id)}
                   aria-expanded={isExpanded}
+                  aria-controls={groupPanelId}
                 >
                   <span className="sidebar-group-head">
                     <span className="sidebar-group-icon">{group.icon}</span>
-                    <span className="sidebar-group-title">{group.title}</span>
+                    <span className="sidebar-group-title-wrap">
+                      <span className="sidebar-group-title">{group.title}</span>
+                      <span className="sidebar-group-summary">{group.summary}</span>
+                    </span>
                   </span>
-                  <span className="sidebar-group-caret">{isExpanded ? "-" : "+"}</span>
+                  <span className={`sidebar-group-caret ${isExpanded ? "sidebar-group-caret-open" : ""}`.trim()}>
+                    +
+                  </span>
                 </button>
 
                 <div
+                  id={groupPanelId}
                   className={`sidebar-group-links ${
                     isExpanded ? "" : "sidebar-group-links-collapsed"
                   }`.trim()}
@@ -124,8 +142,8 @@ export default function Sidebar({ auth, projectContext, isOpen = false, onClose 
         </nav>
 
         <section className="sidebar-utility">
-          {SIDEBAR_UTILITY_LINKS.map((group) => (
-            <div className="sidebar-utility-block" key={group.title}>
+          {SIDEBAR_SUPPORT_SECTIONS.map((group) => (
+            <div className="sidebar-utility-block" key={group.id}>
               <div className="sidebar-utility-head">
                 <span className="sidebar-group-icon">{group.icon}</span>
                 <span className="sidebar-group-title">{group.title}</span>

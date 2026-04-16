@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 // On importe le hook de localisation pour savoir si la sidebar doit etre visible.
 import { NavLink, useLocation } from "react-router-dom";
-import { MOBILE_NAV_ITEMS } from "../application/sidebarConfig";
+import { MOBILE_NAV_ITEMS, SIDEBAR_SECTIONS } from "../application/sidebarConfig";
 import Sidebar from "./Sidebar";
 
 // ===============================
@@ -21,6 +21,8 @@ export default function MainLayout({ dashboard, children }) {
   const isHomePage = location.pathname === "/";
   const showSidebar = !isHomePage;
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const activeSection =
+    SIDEBAR_SECTIONS.find((section) => section.items.some((item) => item.to === location.pathname)) ?? null;
 
   // Quand l'utilisateur change de page,
   // on referme le menu mobile pour garder une navigation fluide.
@@ -50,13 +52,15 @@ export default function MainLayout({ dashboard, children }) {
                 className="app-mobile-menu"
                 type="button"
                 onClick={() => setSidebarOpen((current) => !current)}
+                aria-expanded={sidebarOpen}
+                aria-controls="app-sidebar"
               >
                 {sidebarOpen ? "Fermer le menu" : "Ouvrir le menu"}
               </button>
 
               <div className="app-mobile-context">
-                <span>Workspace SP2I</span>
-                <strong>Navigation metier</strong>
+                <span>{activeSection?.title || "Workspace SP2I"}</span>
+                <strong>{activeSection?.summary || "Navigation metier"}</strong>
               </div>
             </div>
           ) : null}
@@ -71,6 +75,7 @@ export default function MainLayout({ dashboard, children }) {
             <NavLink
               key={item.to}
               to={item.to}
+              end
               className={({ isActive }) => `app-bottom-link ${isActive ? "app-bottom-link-active" : ""}`}
             >
               <span className="app-bottom-icon">{item.icon}</span>
